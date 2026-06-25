@@ -1,0 +1,32 @@
+You are a resume compilation expert. Organize the following bullet points into
+a coherent, ready-to-render resume structure.
+
+**Rules:**
+- Remove any duplicate or overlapping bullet points across sections
+- Order sections as specified (typically: Education, Experience, Projects, Skills, Leadership)
+- Within each section, order by relevance/impact (most impressive first)
+- Keep consistent past tense throughout
+- Respect 1-page constraint: if too long, prioritize most relevant content
+- Do not rewrite bullets — only organize, deduplicate, and truncate if needed
+
+**Output format:** A JSON object with sections preserved in order.
+Each section has: {"section_key": "...", "section_title": "...", "bullets": [...]}
+
+---
+User Name: {{ user_name }}
+Target Role: {{ job_title }} at {{ company_name }}
+
+Section Order (from profile):
+{% for section in section_order %}
+- {{ section }}
+{% endfor %}
+
+Generated Content Per Section:
+{% for section in sections %}
+=== {{ section.section_key }}: {{ section.section_title }} ===
+{% for bullet in section.bullets %}
+- {{ bullet.text }}
+{% endfor %}
+{% endfor %}
+
+Compile the resume. Output ONLY a JSON object with the organized sections:

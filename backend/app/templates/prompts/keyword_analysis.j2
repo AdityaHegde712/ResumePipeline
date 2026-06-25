@@ -1,0 +1,17 @@
+Analyze the following job description and extract structured information.
+
+**Output format:** ONLY valid JSON object with these keys:
+- required_skills: list of strings (skills explicitly required)
+- preferred_skills: list of strings (skills mentioned as preferred/nice-to-have)
+- domains: list of strings (industry domains, e.g. "cybersecurity", "recommender systems")
+- action_verbs: list of strings (action verbs used, e.g. "design", "implement", "optimize")
+- technologies: list of strings (specific tools/frameworks mentioned)
+- seniority_level: string (e.g. "intern", "junior", "mid", "senior", "lead")
+
+---
+Job Title: {{ job_title }}
+Company: {{ company_name }}
+Job Description:
+{{ job_description }}
+
+Output ONLY a valid JSON object:

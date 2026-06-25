@@ -7,14 +7,14 @@ from typing import Optional, List, Dict
 
 class TaskModelConfig(BaseModel):
     """Per-task model configuration"""
-    provider: str = "google"
-    model: str = "gemini/gemini-2.5-pro"
+    provider: str = "gemini"
+    model: str = "gemini-2.5-pro"
 
 
 class LLMConfig(BaseModel):
     """LLM provider configuration — supports per-task model routing."""
-    default_provider: str = "google"
-    default_model: str = "gemini/gemini-2.5-pro"
+    default_provider: str = "gemini"
+    default_model: str = "gemini-2.5-pro"
     tasks: Dict[str, TaskModelConfig] = {}
 
 
