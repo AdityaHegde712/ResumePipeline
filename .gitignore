@@ -1,0 +1,5 @@
+docs/template*
+docs/*sample*
+docs/next_time*
+docs/PROJECT_SWEEP_SUMMARIES.md
+backend/.env

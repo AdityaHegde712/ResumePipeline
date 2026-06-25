@@ -1,0 +1,62 @@
+[
+  {
+    "model": "gemini/gemini-3-pro-preview",
+    "group": "v3",
+    "success": false,
+    "latency_s": 0.81,
+    "error": "litellm.RateLimitError: litellm.RateLimitError: geminiException - {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You ex"
+  },
+  {
+    "model": "gemini/gemini-3-flash-preview",
+    "group": "v3",
+    "success": true,
+    "latency_s": 10.97,
+    "tokens_in": 44,
+    "tokens_out": 334,
+    "finish_reason": "stop",
+    "parsed_json": true,
+    "preview": "{\"model\": \"Mistral-7B-Instruct-v0.3\", \"status\": \"ok\", \"summary\": \"ATS-optimized resumes use specific keywords and simple formatting to ensure they are"
+  },
+  {
+    "model": "gemini/gemini-2.5-pro-preview-03-25",
+    "group": "v25/v2/v1",
+    "success": false,
+    "latency_s": 0.43,
+    "error": "litellm.NotFoundError: GeminiException - {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"models/gemini-2.5-pro-preview-0"
+  },
+  {
+    "model": "gemini/gemini-2.5-flash-preview-04-17",
+    "group": "v25/v2/v1",
+    "success": false,
+    "latency_s": 0.43,
+    "error": "litellm.NotFoundError: GeminiException - {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"models/gemini-2.5-flash-preview"
+  },
+  {
+    "model": "gemini/gemini-2.0-flash",
+    "group": "v25/v2/v1",
+    "success": false,
+    "latency_s": 0.45,
+    "error": "litellm.RateLimitError: litellm.RateLimitError: geminiException - {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You ex"
+  },
+  {
+    "model": "gemini/gemini-2.0-flash-lite",
+    "group": "v25/v2/v1",
+    "success": false,
+    "latency_s": 0.25,
+    "error": "litellm.RateLimitError: litellm.RateLimitError: geminiException - {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You ex"
+  },
+  {
+    "model": "gemini/gemini-1.5-pro",
+    "group": "v25/v2/v1",
+    "success": false,
+    "latency_s": 0.23,
+    "error": "litellm.NotFoundError: GeminiException - {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"models/gemini-1.5-pro is not fo"
+  },
+  {
+    "model": "gemini/gemini-1.5-flash",
+    "group": "v25/v2/v1",
+    "success": false,
+    "latency_s": 0.23,
+    "error": "litellm.NotFoundError: GeminiException - {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"models/gemini-1.5-flash is not "
+  }
+]
