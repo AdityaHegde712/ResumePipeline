@@ -1,5 +1,42 @@
-docs/template*
-docs/*sample*
-docs/next_time*
-docs/PROJECT_SWEEP_SUMMARIES.md
-backend/.env
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+*.pyc
+
+# Node
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Data (keep .gitkeep, track applications json)
+data/applications/*.json
+!data/applications/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# LaTeX build artifacts
+*.aux
+*.fdb_latexmk
+*.fls
+*.out
+*.synctex.gz
+
+# Temp
+*.log
+tmp/

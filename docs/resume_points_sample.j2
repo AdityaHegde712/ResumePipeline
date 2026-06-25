@@ -1,0 +1,89 @@
+{# ================================================================ #}
+{# resume_points.j2 — Generate ATS-optimized bullet points          #}
+{#                                                                  #}
+{# Rendered by: PromptManager(resume_points.j2, context)            #}
+{# Consumed by:  LLMService.call_llm(rendered_prompt)              #}
+{# Context variables (injected by ResumePointsGenerator):           #}
+{#   - section_type: str           "projects" | "experience"       #}
+{#   - section_title: str          e.g. "Notable Projects"         #}
+{#   - items: list[ItemContext]    Project or job entries          #}
+{#   - keywords: list[str]         ATS keywords from JD analysis   #}
+{#   - job_title: str              Target job title                #}
+{#   - tone: str                   "professional" | "technical"   #}
+{#   - max_bullets: int            Max bullets per item (default 5)#}
+{#   - bullet_style: str           "ATS" | "technical" | "hybrid" #}
+{# ================================================================ #}
+
+You are an expert resume writer specializing in ATS-optimized content.
+Generate professional bullet points for a resume targeting a **{{ job_title }}** position.
+
+## Context
+
+You are writing the **{{ section_title }}** section using a **{{ bullet_style }}** style with a **{{ tone }}** tone.
+
+## Target Keywords
+
+Incorporate the following keywords naturally where relevant:
+{% if keywords %}
+{% for kw in keywords %}
+- {{ kw }}
+{% endfor %}
+{% else %}
+(No specific keywords provided — focus on general impact and outcomes.)
+{% endif %}
+
+## Items to Write
+
+{% for item in items %}
+--- Item {{ loop.index }}: {{ item.title }} ---
+{% if item.subtitle %}
+Role/Context: {{ item.subtitle }}
+{% endif %}
+Description: {{ item.description }}
+{% if item.tech_stack %}
+Tech Stack: {{ item.tech_stack | join(", ") }}
+{% endif %}
+{% if item.highlights %}
+Pre-written highlights (incorporate if relevant):
+{% for h in item.highlights %}
+- {{ h }}
+{% endfor %}
+{% endif %}
+{% if item.resume_value_bullets %}
+Suggested angles:
+{% for b in item.resume_value_bullets %}
+- {{ b }}
+{% endfor %}
+{% endif %}
+{% endfor %}
+
+## Instructions
+
+Generate **bullet points** for each item above. Follow these rules:
+
+1. **Count:** Generate {{ max_bullets }} bullet points per item.
+2. **Length:** Each bullet point must be 1-2 lines (10-25 words).
+3. **Action verbs:** Start EVERY bullet with a strong past-tense action verb (Developed, Designed, Optimized, Implemented, Architected, etc.).
+4. **Quantification:** Include measurable impact where possible (%, $, time saved, scale, users affected).
+5. **Keywords:** Naturally weave in relevant keywords from the target list.
+6. **No pronouns:** Do not use "I", "we", "my", "our".
+7. **Consistent tense:** Past tense for completed work, present tense for ongoing.
+8. **No self-fluff:** Be concrete. Avoid "highly skilled", "passionate", "excellent".
+
+## Output Format
+
+Respond with ONLY valid JSON in this exact structure (no markdown, no code fences):
+
+{
+  "sections": [
+    {
+      "item_title": "{{ items[0].title if items else '' }}",
+      "bullets": [
+        "Action verb + description + quantified impact.",
+        "Action verb + description + quantified impact."
+      ]
+    }
+  ]
+}
+
+Generate exactly one section per item, in the same order as listed above.
