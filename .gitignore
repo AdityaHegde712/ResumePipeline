@@ -40,3 +40,9 @@ Thumbs.db
 # Temp
 *.log
 tmp/
+
+# Documents
+docs/next_time*
+docs/PROJECT_SWEEP_SUMMARIES.md
+docs/template*
+docs/*sample*
