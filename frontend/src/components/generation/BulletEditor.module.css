@@ -1,0 +1,135 @@
+/* ── BulletEditor – single-bullet inline editor (dark dev-tool aesthetic) ── */
+
+.container {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.container:hover {
+  border-color: var(--text-muted);
+}
+
+.container.editing {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-muted);
+}
+
+/* ── Display mode ── */
+
+.display {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.textContent {
+  flex: 1;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  min-width: 0;
+  word-break: break-word;
+}
+
+.editedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-left: 0.5rem;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.editedDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--warning);
+  flex-shrink: 0;
+}
+
+/* ── Action buttons ── */
+
+.actions {
+  display: flex;
+  gap: 0.125rem;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.actionBtn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  transition: all var(--transition);
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+}
+
+.actionBtn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+
+.actionBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.deleteBtn:hover:not(:disabled) {
+  background: var(--error-bg);
+  color: var(--error);
+  border-color: var(--error);
+}
+
+/* ── Edit mode ── */
+
+.editArea {
+  padding: 0.75rem 1rem;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 0.625rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  resize: vertical;
+  transition: border-color var(--transition);
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.editHint {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+}

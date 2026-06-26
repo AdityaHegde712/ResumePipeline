@@ -1,0 +1,150 @@
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.headerInfo h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+  color: var(--text-primary);
+}
+
+.headerInfo p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.navLinks {
+  display: flex;
+  gap: 1rem;
+}
+
+.navLink {
+  font-size: 0.85rem;
+  color: var(--accent);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.navLink:hover {
+  color: var(--accent-hover);
+}
+
+/* Code preview */
+.codeBlock {
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: #e6edf3;
+  overflow-x: auto;
+  white-space: pre;
+  max-height: 60vh;
+  overflow-y: auto;
+  line-height: 1.6;
+  margin-bottom: 1.25rem;
+}
+
+.codeBlock::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.codeBlock::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.codeBlock::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+/* Action buttons */
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.actionBtn:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+
+.actionBtn.primary {
+  background: var(--accent-muted);
+  border-color: var(--accent-muted);
+  color: white;
+}
+
+.actionBtn.primary:hover:not(:disabled) {
+  background: var(--accent);
+}
+
+.actionBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.actionBtn .copied {
+  color: var(--success);
+}
+
+/* Info bar */
+.infoBar {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.infoLabel {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.infoValue {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
