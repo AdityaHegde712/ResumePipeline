@@ -17,7 +17,7 @@ export default function Dashboard() {
 
   const stats = {
     total: apps?.length ?? 0,
-    completed: apps?.filter((a) => a.generation_status === 'completed').length ?? 0,
+    completed: apps?.filter((a) => a.generation_status === 'completed')?.length ?? 0,
     projects: projects?.length ?? 0,
   };
 
