@@ -7,7 +7,7 @@ export function useProjects() {
     queryKey: ['projects'],
     queryFn: async () => {
       const { data } = await apiClient.get('/projects');
-      return data;
+      return data.projects;
     },
   });
 }
@@ -18,7 +18,7 @@ export function useProject(id: string | undefined) {
     enabled: !!id,
     queryFn: async () => {
       const { data } = await apiClient.get(`/projects/${id}`);
-      return data;
+      return data.project;
     },
   });
 }
@@ -29,7 +29,7 @@ export function useSearchProjects() {
       const { data } = await apiClient.get('/projects/search', {
         params: { q: query },
       });
-      return data as ProjectEntry[];
+      return data.results as ProjectEntry[];
     },
   });
 }
@@ -47,7 +47,7 @@ export function useMatchProjects() {
   return useMutation({
     mutationFn: async (req: MatchRequest) => {
       const { data } = await apiClient.post('/projects/match', req);
-      return data as MatchResult[];
+      return data.matches as MatchResult[];
     },
   });
 }

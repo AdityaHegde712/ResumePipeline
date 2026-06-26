@@ -7,7 +7,7 @@ export function useApplications() {
     queryKey: ['applications'],
     queryFn: async () => {
       const { data } = await apiClient.get('/applications');
-      return data;
+      return data.applications;
     },
   });
 }
