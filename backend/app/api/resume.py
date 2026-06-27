@@ -56,7 +56,7 @@ def get_orchestrator() -> "Orchestrator":
         project_service = ProjectSweepService(settings.sweep_file_path)
         history_service = HistoryService(settings.data_dir / "applications")
         llm_service = LLMService(config=get_llm_config())
-        prompt_manager = PromptManager(settings.data_dir / "app" / "templates" / "prompts", settings)
+        prompt_manager = PromptManager(Path("./app/templates/prompts"), settings)
 
         _orchestrator = Orchestrator(
             profile_service=profile_service,
