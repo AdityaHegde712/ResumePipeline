@@ -11,7 +11,7 @@ from typing import Optional
 class Settings(BaseSettings):
     # ── LLM — field name maps to GEMINI_API_KEY env var via pydantic-settings ──
     gemini_api_key: str = ""
-    llm_default_model: str = "gemini/gemini-2.5-pro"
+    llm_default_model: str = "gemini/gemini-3-flash-preview"  # reads from LLM_DEFAULT_MODEL env var
     llm_default_temperature: float = 0.3  # Gemini 3+ models override to 1.0 internally
     llm_max_tokens: int = 4096
 

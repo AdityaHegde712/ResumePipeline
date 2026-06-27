@@ -2,11 +2,11 @@
 LLM Service — provider-agnostic client using LiteLLM.
 
 Architecture:
-  [v1.0] LiteLLM exclusively → Gemini 2.5 Pro for all tasks
+  [v1.0] LiteLLM exclusively → Gemini 3 Flash Preview for all tasks
   [v1.1] Per-task routing via TaskModelConfig (DeepSeek swap-in ready)
 
 Provider keying (LiteLLM format):
-  Gemini:   "gemini/gemini-2.5-pro"
+  Gemini:   "gemini/gemini-3-flash-preview"
   DeepSeek: "deepseek/deepseek-v4-flash"
   OpenAI:   "openai/gpt-4o"
   Anthropic: "anthropic/claude-sonnet-4-20250514"

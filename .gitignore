@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+session
 
 # Python
 __pycache__/
@@ -46,3 +47,4 @@ docs/next_time*
 docs/PROJECT_SWEEP_SUMMARIES.md
 docs/template*
 docs/*sample*
+docs/postman-testing-guide.md
