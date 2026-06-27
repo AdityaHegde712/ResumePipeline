@@ -89,21 +89,33 @@
 
 ---
 
+## Phase 7 Assignments
+
+| Task | Agent | Files |
+|------|-------|-------|
+| 7.1.1 Fix LLMService config | `@backend-dev` | `backend/app/api/resume.py` |
+| 7.1.2 Fix PromptManager arg | `@backend-dev` | `backend/app/api/resume.py` |
+| 7.1.3 Move init inside try | `@backend-dev` | `backend/app/pipeline/orchestrator.py` |
+| 7.1.4 Fix SSE model serialization | `@backend-dev` | `backend/app/pipeline/orchestrator.py` |
+| 7.2.1 Remove empty-selection guard | `@frontend-dev` | `frontend/src/pages/NewApplication.tsx` |
+| 7.2.2 Simplify project selection UX | `@frontend-dev` | `frontend/src/pages/NewApplication.tsx` |
+| 7.3.1 Regression tests | `@tester` | `backend/tests/` |
+
 ## Agent Responsibility Summary
 
-| Agent | Total Tasks | Key Deliverables |
-|-------|-------------|------------------|
+| Agent | Total Tasks (all phases) | Key Deliverables |
+|-------|--------------------------|------------------|
 | `@data-engineer` | 6 | Pydantic models, ProfileService (two-file), ProjectSweepService, HistoryService, indexing |
 | `@model-scientist` | 5 | LLMService (LiteLLM), PromptManager (+ env overrides), 4 prompt templates, MatchingService |
-| `@backend-dev` | 18 | Project setup, ALL pipeline services (6 incl. PDFCompiler), ALL API endpoints (8 + PDF/tex exports), LaTeX, SSE, error handling |
-| `@frontend-dev` | 11 | React app shell, ALL pages (6 incl. PDF download), ALL components (~17), API hooks, styles |
-| `@tester` | 7 | Unit tests × data layer, LLM, pipeline (+ PDFCompiler), API. Integration tests. E2E. Regression. |
+| `@backend-dev` | 22 | +4 bugfixes: LLMService config, PromptManager arg, try-block scope, SSE serialization |
+| `@frontend-dev` | 13 | +2 UX: auto-matching, simplified project selection |
+| `@tester` | 8 | +1 test: Phase 7.3 regression tests |
 | `@general-builder` | 2 | Directory structure, gitignore, README scaffold |
 | `@security-reviewer` | 1 | Security audit (API keys, LaTeX injection, path traversal) |
 | `@clean-coder` | 1 | Linting, type hints, docstrings, code quality |
 | `@technical-writer` | 1 | README, setup guide, usage docs |
 
-**Total unique agents:** 9 (8 static + 0 dynamic — all new features fit existing roster)
+**Total unique agents:** 9 (8 static + 0 dynamic — all Phase 7 tasks fit existing roster)
 
 ---
 

@@ -1978,3 +1978,45 @@ const downloadPdf = async () => {
 | **Total** | **51** | **219** | — |
 
 > **Note:** This v2.0 task list collapses some redundant sub-tasks from v1.0. The total is 51 tasks vs the previous 52, now with more detail per task.
+
+---
+
+## Phase 7: Bug Fixes & UX Improvements (7 tasks, 13 complexity)
+
+> **Added:** June 26, 2026  
+> **Target:** Fix generation 500 error, fix model hardcoding, enable auto-matching
+
+### Phase 7.1 — Backend Crash Fixes (4 tasks, 5 complexity)
+
+| ID | Task Description | File(s) | Complexity | Acceptance Criteria | Agent |
+|----|-----------------|---------|------------|-------------------|-------|
+| 7.1.1 | Fix `LLMService()` to read model from `.env` instead of hardcoded default | `backend/app/api/resume.py:57` | 1 | `LLMService(config=get_llm_config())` — pipeline uses `LLM_DEFAULT_MODEL` from `.env` | `@backend-dev` |
+| 7.1.2 | Fix `PromptManager()` missing required `templates_dir` argument | `backend/app/api/resume.py:58` | 1 | `PromptManager(settings.data_dir / "app" / "templates" / "prompts", settings)` — no more `TypeError` on startup | `@backend-dev` |
+| 7.1.3 | Move initialization code (lines 334-337) inside try block in `run_points_only()` | `backend/app/pipeline/orchestrator.py:334-339` | 2 | App creation, history write, and stage emit covered by `try/except` — any failure emits SSE error event instead of 500 | `@backend-dev` |
+| 7.1.4 | Convert Pydantic `SectionPoints` models to dicts before passing to SSE `format_sse_event()` | `backend/app/pipeline/orchestrator.py:833` | 1 | `json.dumps()` can serialize the sections data — no `TypeError` on pipeline completion | `@backend-dev` |
+
+### Phase 7.2 — Frontend Auto-Matching (2 tasks, 4 complexity)
+
+| ID | Task Description | File(s) | Complexity | Acceptance Criteria | Agent |
+|----|-----------------|---------|------------|-------------------|-------|
+| 7.2.1 | Remove the `if (selectedIds.length === 0) return;` guard that blocks generation when no projects are selected | `frontend/src/pages/NewApplication.tsx:51` | 1 | User can hit "Generate Resume Points" without manually checking any project boxes | `@frontend-dev` |
+| 7.2.2 | Remove the manual project selection panel — auto-pass empty `selected_project_ids` to backend so `_filter_selected_projects()` uses all 17 projects; backend already runs LLM matching on all of them | `frontend/src/pages/NewApplication.tsx` | 3 | Single-column layout (form only); generation submits `selected_project_ids: []`; backend auto-matches top projects | `@frontend-dev` |
+
+### Phase 7.3 — Regression Tests (1 task, 4 complexity)
+
+| ID | Task Description | File(s) | Complexity | Acceptance Criteria | Agent |
+|----|-----------------|---------|------------|-------------------|-------|
+| 7.3.1 | Add tests verifying: `get_orchestrator()` creates properly, model from `.env` is used, SSE complete event doesn't crash with Pydantic models | `backend/tests/` | 4 | Tests pass alongside existing 178; verify LLMService resolves to `.env` model, not hardcoded default | `@tester` |
+
+---
+
+### Phase 7 Summary
+
+| Metric | Value |
+|--------|-------|
+| Total tasks | 7 |
+| Total complexity | 13/70 |
+| Agents needed | `@backend-dev`, `@frontend-dev`, `@tester` |
+| Dependencies | 7.1.x → 7.3.x, 7.2.x → 7.3.x |
+| Backend verification | `pytest` passes |
+| Frontend verification | `tsc --noEmit` + `vite build` pass |

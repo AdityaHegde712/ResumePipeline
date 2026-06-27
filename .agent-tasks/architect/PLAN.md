@@ -1913,3 +1913,82 @@ README.md
 ```
 
 **Total: ~72 files**
+
+---
+
+## Phase 7: Bug Fixes & UX Improvements (v3.0)
+
+> **Status:** Draft — Awaiting Owner Confirmation  
+> **Version:** 3.0  
+> **Generated:** June 26, 2026  
+> **Target:** Fix generation 500 error, fix model hardcoding, enable auto-matching
+
+### Problem Statement
+
+Three issues block the generation flow:
+
+1. **Generation crashes with 500** — `POST /api/generate/points` returns HTTP 500 before producing SSE events. Root cause: `PromptManager()` in `get_orchestrator()` is missing the required `templates_dir` argument.
+
+2. **LLM model hardcoded** — The pipeline uses `"gemini-2.5-pro"` (hardcoded Pydantic default) instead of the `.env`-configured `"gemini-3-flash-preview"`. The config API endpoint reads the env correctly, but the pipeline doesn't.
+
+3. **Manual project selection only** — The user must manually click project checkboxes to generate. The LLM already scores projects during generation (`MatchingService.match()`), but the frontend blocks submission if no projects are selected.
+
+### Root Cause Analysis
+
+#### Bug 1 — 500 Crash (3 stacked failures)
+
+| Layer | File:Line | Failure | Fix |
+|-------|-----------|---------|-----|
+| Init | `resume.py:58` | `PromptManager()` called without `templates_dir` — `TypeError` on every request | Pass `settings.data_dir / "app" / "templates" / "prompts"` |
+| Init | `orchestrator.py:334-337` | App creation, history write, and stage emit happen outside `try` block — uncaught exceptions | Move `try:` to cover these lines |
+| SSE | `orchestrator.py:833` | Pydantic `SectionPoints` objects passed to `json.dumps()` — not serializable | Convert to dicts via `.model_dump()` |
+
+#### Bug 2 — Model Hardcoding
+
+| Path | How model resolves | Active model |
+|------|-------------------|--------------|
+| `GET /api/config/llm` | `settings.llm_default_model` (reads `.env`) | `"gemini-3-flash-preview"` ✅ |
+| `GET /api/generate/points` | `LLMService()` with no config → `LLMConfig()` defaults | `"gemini-2.5-pro"` ❌ |
+
+**Fix:** Pass `config=get_llm_config()` to `LLMService()` in `resume.py:57`.
+
+#### Bug 3 — No Auto-Matching
+
+- `NewApplication.tsx:51`: `if (selectedIds.length === 0) return;` — blocks submission
+- `NewApplication.tsx:116-119`: "Match to Job" button has empty `onClick` handler
+- Backend `_filter_selected_projects()` already auto-defaults to ALL projects when `selected_project_ids` is empty
+
+**Fix:** Remove frontend guard, pass empty `selected_project_ids` to backend.
+
+### Implementation Plan
+
+#### Phase 7.1 — Backend Crash Fixes
+
+| Task | File | Change | Complexity |
+|------|------|--------|-----------|
+| 7.1.1 | `resume.py:57` | `LLMService()` → `LLMService(config=get_llm_config())` | 1 |
+| 7.1.2 | `resume.py:58` | `PromptManager()` → `PromptManager(settings.data_dir / "app" / "templates" / "prompts", settings)` | 1 |
+| 7.1.3 | `orchestrator.py:334-339` | Move `try:` before line 334 | 2 |
+| 7.1.4 | `orchestrator.py:833` | `sections=app.generated.resume_points` → `sections=[s.model_dump() for s in (...)]` | 1 |
+
+#### Phase 7.2 — Frontend Auto-Matching
+
+| Task | File | Change | Complexity |
+|------|------|--------|-----------|
+| 7.2.1 | `NewApplication.tsx:51` | Remove `if (selectedIds.length === 0) return;` | 1 |
+| 7.2.2 | `NewApplication.tsx` | Strip manual project selection panel; auto-pass empty `selected_project_ids` | 3 |
+
+#### Phase 7.3 — Regression Tests
+
+| Task | File | Change | Complexity |
+|------|------|--------|-----------|
+| 7.3.1 | `tests/test_api.py` | Verify `get_orchestrator()` doesn't crash; verify model from `.env` | 4 |
+
+**Total complexity for Phase 7:** 13/70
+
+### Verification
+
+1. `cd backend && pytest` — all 178 + new tests pass
+2. `cd frontend && cmd /c npx tsc --noEmit` — zero errors
+3. `cd frontend && cmd /c npx vite build` — clean build
+4. Browser: Navigate to Dashboard → New Application → fill job details → hit Generate → SSE stream starts (no 500) → redirects to Review page

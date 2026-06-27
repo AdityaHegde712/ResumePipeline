@@ -331,12 +331,11 @@ class Orchestrator:
             ``Application`` with generated points (``app.generated.resume_points``
             populated) but no compiled resume or LaTeX.
         """
-        app = await self._create_application(request)
-        app.generation_status = GenerationStatus.PENDING
-        app = await self.history.create(app)
-        await self._emit_stage(emit, STAGE_INITIALIZING, "start")
-
         try:
+            app = await self._create_application(request)
+            app.generation_status = GenerationStatus.PENDING
+            app = await self.history.create(app)
+            await self._emit_stage(emit, STAGE_INITIALIZING, "start")
             # Stage 2 — Load projects
             await self._emit_stage(emit, STAGE_LOADING_PROJECTS, "start")
             all_projects = self.project_service.get_all()
@@ -830,7 +829,7 @@ class Orchestrator:
         event_type, data = SSEEventBuilder.complete(
             app.id,
             latex=app.generated.resume_latex if app.generated else "",
-            sections=app.generated.resume_points if app.generated else [],
+            sections=[s.model_dump() for s in app.generated.resume_points] if app.generated else [],
             total_tokens=total_tokens,
             **extra,
         )

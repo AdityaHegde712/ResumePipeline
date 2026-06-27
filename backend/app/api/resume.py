@@ -42,6 +42,7 @@ def get_orchestrator() -> "Orchestrator":
         from app.services.history_service import HistoryService
         from app.services.llm_service import LLMService
         from app.services.prompt_manager import PromptManager
+        from app.api.config import get_llm_config
         from app.pipeline.matching_service import MatchingService
         from app.pipeline.keyword_analysis_service import KeywordAnalysisService
         from app.pipeline.resume_points_generator import ResumePointsGenerator
@@ -54,8 +55,8 @@ def get_orchestrator() -> "Orchestrator":
         profile_service = ProfileService(settings.data_dir)
         project_service = ProjectSweepService(settings.sweep_file_path)
         history_service = HistoryService(settings.data_dir / "applications")
-        llm_service = LLMService()
-        prompt_manager = PromptManager()
+        llm_service = LLMService(config=get_llm_config())
+        prompt_manager = PromptManager(settings.data_dir / "app" / "templates" / "prompts", settings)
 
         _orchestrator = Orchestrator(
             profile_service=profile_service,
