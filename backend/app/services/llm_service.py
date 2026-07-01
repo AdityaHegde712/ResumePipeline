@@ -11,6 +11,7 @@ Provider keying (LiteLLM format):
   OpenAI:   "openai/gpt-4o"
   Anthropic: "anthropic/claude-sonnet-4-20250514"
 """
+import asyncio
 import os
 import json
 import logging
@@ -83,6 +84,7 @@ class LLMService:
         temperature: float = 0.3,
         max_tokens: int = 4096,
         stream: bool = False,
+        max_retries: int = 3,
     ) -> str | AsyncIterator[str]:
         """Send a completion request to the LLM.
         
@@ -92,6 +94,7 @@ class LLMService:
             temperature: Sampling temperature.
             max_tokens: Maximum output tokens.
             stream: If True, returns async generator yielding tokens.
+            max_retries: Maximum number of retries for transient errors.
             
         Returns:
             If stream=False: Full response text as string.
@@ -103,24 +106,38 @@ class LLMService:
             LLMRateLimitError: If rate limited.
         """
         model = self.get_model_for_task(task)
-        
-        try:
-            from litellm import acompletion
-            
-            if stream:
-                return self._stream_generate(model, messages, temperature, max_tokens)
-            
-            response = await acompletion(
-                model=model,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
-            )
-            
-            return response.choices[0].message.content or ""
-            
-        except Exception as e:
-            self._handle_error(e)
+
+        last_error = None
+        for attempt in range(max_retries + 1):
+            try:
+                from litellm import acompletion
+
+                if stream:
+                    return self._stream_generate(model, messages, temperature, max_tokens)
+
+                response = await acompletion(
+                    model=model,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                )
+
+                return response.choices[0].message.content or ""
+
+            except (LLMConnectionError, LLMRateLimitError) as e:
+                last_error = e
+                if attempt < max_retries:
+                    delay = 2 ** attempt  # 1, 2, 4 seconds
+                    logger.warning(
+                        f"LLM call failed (attempt {attempt + 1}/{max_retries + 1}), "
+                        f"retrying in {delay}s: {e}"
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    raise
+            except Exception as e:
+                # Non-retryable: auth errors, parse errors, etc.
+                self._handle_error(e)
 
     async def _stream_generate(
         self,
@@ -242,7 +259,7 @@ class LLMService:
             raise LLMAuthError(f"Authentication failed: {error}") from error
         elif "rate limit" in error_str or "too many requests" in error_str or "429" in error_str:
             raise LLMRateLimitError(f"Rate limited: {error}") from error
-        elif "connection" in error_str or "timeout" in error_str or "unreachable" in error_str:
+        elif any(x in error_str for x in ["connection", "timeout", "unreachable", "unavailable", "503"]):
             raise LLMConnectionError(f"Connection failed: {error}") from error
         else:
             raise LLMServiceError(f"LLM call failed: {error}") from error

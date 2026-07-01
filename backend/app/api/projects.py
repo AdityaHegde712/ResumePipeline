@@ -113,13 +113,16 @@ async def match_projects(request: MatchRequest) -> dict:
         if not projects:
             return {"matches": []}
 
+        from pathlib import Path
+
         from app.config import settings
+        from app.api.config import get_llm_config
         from app.services.llm_service import LLMService
         from app.services.prompt_manager import PromptManager
         from app.pipeline.matching_service import MatchingService
 
-        llm = LLMService()
-        prompts = PromptManager(settings.data_dir.parent / "app" / "templates" / "prompts")
+        llm = LLMService(config=get_llm_config())
+        prompts = PromptManager(Path("./app/templates/prompts"), settings)
         matcher = MatchingService(llm, prompts)
 
         matches = await matcher.match(
