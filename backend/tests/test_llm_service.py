@@ -150,6 +150,145 @@ class TestLLMServiceGenerateStructured:
             )
 
 
+
+
+class TestLLMServiceStreaming:
+    """Tests for streaming generation with retry."""
+
+    @pytest.mark.asyncio
+    async def test_streaming_success(self, mock_litellm, llm_service):
+        """Streaming should yield tokens successfully."""
+        async def _mock_stream():
+            chunk = MagicMock()
+            chunk.choices = [MagicMock(delta=MagicMock(content="Hello world"))]
+            yield chunk
+
+        mock_litellm.return_value = _mock_stream()
+
+        result = await llm_service.generate(
+            [{"role": "user", "content": "Hi"}], stream=True
+        )
+        tokens = [token async for token in result]
+        assert tokens == ["Hello world"]
+
+    @pytest.mark.asyncio
+    async def test_streaming_retry_on_rate_limit(self, mock_litellm, llm_service):
+        """Rate limit on first call should retry and succeed on second."""
+        async def _mock_stream():
+            chunk = MagicMock()
+            chunk.choices = [MagicMock(delta=MagicMock(content="Hello after retry"))]
+            yield chunk
+
+        mock_litellm.side_effect = [
+            Exception("Rate limit exceeded: 429"),
+            _mock_stream(),
+        ]
+
+        result = await llm_service.generate(
+            [{"role": "user", "content": "Hi"}], stream=True
+        )
+        tokens = [token async for token in result]
+        assert tokens == ["Hello after retry"]
+        assert mock_litellm.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_streaming_retry_on_connection_error(self, mock_litellm, llm_service):
+        """Connection error on first call should retry and succeed on second."""
+        async def _mock_stream():
+            chunk = MagicMock()
+            chunk.choices = [MagicMock(delta=MagicMock(content="Hello after retry"))]
+            yield chunk
+
+        mock_litellm.side_effect = [
+            Exception("Connection timeout"),
+            _mock_stream(),
+        ]
+
+        result = await llm_service.generate(
+            [{"role": "user", "content": "Hi"}], stream=True
+        )
+        tokens = [token async for token in result]
+        assert tokens == ["Hello after retry"]
+        assert mock_litellm.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_streaming_auth_error_no_retry(self, mock_litellm, llm_service):
+        """Auth error should raise immediately without retry."""
+        mock_litellm.side_effect = Exception("Authentication failed: Invalid API key")
+
+        result = await llm_service.generate(
+            [{"role": "user", "content": "Hi"}], stream=True
+        )
+        with pytest.raises(LLMAuthError):
+            async for _ in result:
+                pass
+        assert mock_litellm.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_streaming_retry_exhaustion(self, mock_litellm, llm_service):
+        """After exhausting retries, the last error should be raised."""
+        mock_litellm.side_effect = Exception("Rate limit exceeded: 429")
+
+        result = await llm_service.generate(
+            [{"role": "user", "content": "Hi"}], stream=True, max_retries=2
+        )
+        with pytest.raises(LLMRateLimitError):
+            async for _ in result:
+                pass
+        assert mock_litellm.call_count == 3  # initial + 2 retries
+
+
+class TestLLMServiceGenerateStructuredErrors:
+    """Tests that generate_structured preserves LLM error types."""
+
+    @pytest.mark.asyncio
+    async def test_generate_structured_preserves_rate_limit(self, mock_litellm, llm_service):
+        """Rate limit from generate() should propagate, not be masked as LLMParseError."""
+        mock_litellm.side_effect = Exception("Rate limit exceeded: 429")
+        with pytest.raises(LLMRateLimitError):
+            await llm_service.generate_structured(
+                [{"role": "user", "content": "Test"}],
+            )
+
+    @pytest.mark.asyncio
+    async def test_generate_structured_preserves_auth_error(self, mock_litellm, llm_service):
+        """Auth error from generate() should propagate, not be masked as LLMParseError."""
+        mock_litellm.side_effect = Exception("Authentication failed: Invalid API key")
+        with pytest.raises(LLMAuthError):
+            await llm_service.generate_structured(
+                [{"role": "user", "content": "Test"}],
+            )
+
+    @pytest.mark.asyncio
+    async def test_generate_structured_preserves_connection_error(self, mock_litellm, llm_service):
+        """Connection error from generate() should propagate, not be masked as LLMParseError."""
+        mock_litellm.side_effect = Exception("Connection timeout")
+        with pytest.raises(LLMConnectionError):
+            await llm_service.generate_structured(
+                [{"role": "user", "content": "Test"}],
+            )
+
+    @pytest.mark.asyncio
+    async def test_generate_structured_retry_on_json_error_then_rate_limit(self, mock_litellm, llm_service):
+        """After JSON retry, a rate limit on the second call should propagate unmasked."""
+        mock_response_bad = MagicMock()
+        mock_response_bad.choices = [MagicMock(
+            message=MagicMock(content="not json")
+        )]
+        mock_litellm.side_effect = [
+            mock_response_bad,
+            Exception("Rate limit exceeded: 429"),
+            Exception("Rate limit exceeded: 429"),
+            Exception("Rate limit exceeded: 429"),
+            Exception("Rate limit exceeded: 429"),
+        ]
+
+        with pytest.raises(LLMRateLimitError):
+            await llm_service.generate_structured(
+                [{"role": "user", "content": "Test"}],
+            )
+
+
 class TestLLMServiceMisc:
     """Tests for other LLMService methods."""
 
