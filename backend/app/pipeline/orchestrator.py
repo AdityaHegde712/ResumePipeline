@@ -45,7 +45,13 @@ from app.pipeline.matching_service import MatchingService
 from app.pipeline.resume_points_generator import ResumePointsGenerator
 from app.pipeline.resume_writer import ResumeWriter
 from app.services.history_service import HistoryService
-from app.services.llm_service import LLMService
+from app.services.llm_service import (
+    LLMService,
+    LLMAuthError,
+    LLMConnectionError,
+    LLMParseError,
+    LLMRateLimitError,
+)
 from app.services.profile_service import ProfileService
 from app.services.project_sweep_service import ProjectSweepService
 from app.services.prompt_manager import PromptManager
@@ -192,15 +198,28 @@ class Orchestrator:
         app.generation_status = GenerationStatus.PENDING
         app = await self.history.create(app)
         await self._emit_stage(emit, STAGE_INITIALIZING, "start")
-        logger.info("Pipeline started: app=%s job=%s @ %s", app.id, request.job_title, request.company_name)
+        logger.info(
+            "Pipeline started: app=%s job=%s @ %s",
+            app.id,
+            request.job_title,
+            request.company_name,
+        )
 
         try:
             # ── Stage 2: Load projects ─────────────────────────────────
             await self._emit_stage(emit, STAGE_LOADING_PROJECTS, "start")
             all_projects = self.project_service.get_all()
-            projects = self._filter_selected_projects(all_projects, request.selected_project_ids)
-            logger.info("Loaded %d projects (%d after selection)", len(all_projects), len(projects))
-            await self._emit_stage(emit, STAGE_LOADING_PROJECTS, "complete", count=len(projects))
+            projects = self._filter_selected_projects(
+                all_projects, request.selected_project_ids
+            )
+            logger.info(
+                "Loaded %d projects (%d after selection)",
+                len(all_projects),
+                len(projects),
+            )
+            await self._emit_stage(
+                emit, STAGE_LOADING_PROJECTS, "complete", count=len(projects)
+            )
 
             # ── Stage 3: Match projects ────────────────────────────────
             await self._emit_stage(emit, STAGE_MATCHING_PROJECTS, "start")
@@ -218,7 +237,9 @@ class Orchestrator:
             app.selected_project_ids = [m.project_id for m in match_results]
             await self.history.update(app)
             await self._emit_stage(
-                emit, STAGE_MATCHING_PROJECTS, "complete",
+                emit,
+                STAGE_MATCHING_PROJECTS,
+                "complete",
                 matches=[m.model_dump() for m in match_results],
             )
 
@@ -230,7 +251,9 @@ class Orchestrator:
                 job_description=request.job_description,
             )
             jd_keywords_text = self.keyword_service.extract_keywords_text(keyword_data)
-            logger.info("Keyword analysis complete — %d skill categories", len(keyword_data))
+            logger.info(
+                "Keyword analysis complete — %d skill categories", len(keyword_data)
+            )
             await self._emit_stage(emit, STAGE_ANALYZING_KEYWORDS, "complete")
 
             # ── Stage 5: Generate points ───────────────────────────────
@@ -261,7 +284,9 @@ class Orchestrator:
             )
             await self.history.update(app)
             await self._emit_stage(
-                emit, STAGE_GENERATING_POINTS, "complete",
+                emit,
+                STAGE_GENERATING_POINTS,
+                "complete",
                 section_count=len(sections),
                 bullet_count=sum(len(s.bullets) for s in sections),
             )
@@ -281,7 +306,9 @@ class Orchestrator:
             app.generated.resume_points = compiled_sections
             await self.history.update(app)
             await self._emit_stage(
-                emit, STAGE_WRITING_RESUME, "complete",
+                emit,
+                STAGE_WRITING_RESUME,
+                "complete",
                 section_count=len(compiled_sections),
             )
 
@@ -297,14 +324,16 @@ class Orchestrator:
             app.generated.resume_latex = latex_content
             await self.history.update(app)
             await self._emit_stage(
-                emit, STAGE_RENDERING_LATEX, "complete",
+                emit,
+                STAGE_RENDERING_LATEX,
+                "complete",
                 latex_length=len(latex_content),
             )
 
             # ── Stage 8: Complete ──────────────────────────────────────
             app.generation_status = GenerationStatus.COMPLETED
             app = await self.history.update(app)
-            await self._emit_complete(emit, app, sections=compiled_sections)
+            await self._emit_complete(emit, app)
             logger.info("Pipeline completed successfully: app=%s", app.id)
             return app
 
@@ -339,8 +368,12 @@ class Orchestrator:
             # Stage 2 — Load projects
             await self._emit_stage(emit, STAGE_LOADING_PROJECTS, "start")
             all_projects = self.project_service.get_all()
-            projects = self._filter_selected_projects(all_projects, request.selected_project_ids)
-            await self._emit_stage(emit, STAGE_LOADING_PROJECTS, "complete", count=len(projects))
+            projects = self._filter_selected_projects(
+                all_projects, request.selected_project_ids
+            )
+            await self._emit_stage(
+                emit, STAGE_LOADING_PROJECTS, "complete", count=len(projects)
+            )
 
             # Stage 3 — Match projects
             await self._emit_stage(emit, STAGE_MATCHING_PROJECTS, "start")
@@ -357,7 +390,9 @@ class Orchestrator:
             app.selected_project_ids = [m.project_id for m in match_results]
             await self.history.update(app)
             await self._emit_stage(
-                emit, STAGE_MATCHING_PROJECTS, "complete",
+                emit,
+                STAGE_MATCHING_PROJECTS,
+                "complete",
                 matches=[m.model_dump() for m in match_results],
             )
 
@@ -396,15 +431,17 @@ class Orchestrator:
             )
             app = await self.history.update(app)
             await self._emit_stage(
-                emit, STAGE_GENERATING_POINTS, "complete",
+                emit,
+                STAGE_GENERATING_POINTS,
+                "complete",
                 section_count=len(sections),
                 bullet_count=sum(len(s.bullets) for s in sections),
             )
 
             # Done — points are ready
             await self._emit_complete(
-                emit, app,
-                sections=sections,
+                emit,
+                app,
                 message="Points generation complete — ready for review",
             )
             logger.info("Points-only pipeline completed: app=%s", app.id)
@@ -445,7 +482,11 @@ class Orchestrator:
 
         try:
             profile = await self._load_profile()
-            sections = app.generated.resume_points if app.generated and app.generated.resume_points else []
+            sections = (
+                app.generated.resume_points
+                if app.generated and app.generated.resume_points
+                else []
+            )
 
             if not sections:
                 msg = f"Application {application_id} has no generated points to compile"
@@ -468,7 +509,9 @@ class Orchestrator:
             app.generated.resume_points = compiled_sections
             await self.history.update(app)
             await self._emit_stage(
-                emit, STAGE_WRITING_RESUME, "complete",
+                emit,
+                STAGE_WRITING_RESUME,
+                "complete",
                 section_count=len(compiled_sections),
             )
 
@@ -484,7 +527,9 @@ class Orchestrator:
             app.generated.resume_latex = latex_content
             await self.history.update(app)
             await self._emit_stage(
-                emit, STAGE_RENDERING_LATEX, "complete",
+                emit,
+                STAGE_RENDERING_LATEX,
+                "complete",
                 latex_length=len(latex_content),
             )
 
@@ -551,19 +596,24 @@ class Orchestrator:
                     break
 
             if target_idx is None:
-                msg = f"Section '{section_key}' not found in application {application_id}"
+                msg = (
+                    f"Section '{section_key}' not found in application {application_id}"
+                )
                 raise ValueError(msg)
 
             # Build section context for the LLM
             section_type, section_name, section_details = self._build_section_context(
-                section_key, profile,
+                section_key,
+                profile,
             )
 
             # Get the JD keywords from stored data or recompute
             jd_keywords_text = await self._get_or_recompute_keywords(app)
 
             # Emit that we're generating points for this section
-            await self._emit_stage(emit, STAGE_GENERATING_POINTS, "start", section=section_key)
+            await self._emit_stage(
+                emit, STAGE_GENERATING_POINTS, "start", section=section_key
+            )
 
             # Generate new bullets for this section
             new_bullet_texts = await self.points_generator.generate_for_section(
@@ -598,7 +648,9 @@ class Orchestrator:
             )
 
             await self._emit_stage(
-                emit, STAGE_GENERATING_POINTS, "complete",
+                emit,
+                STAGE_GENERATING_POINTS,
+                "complete",
                 section=section_key,
                 bullet_count=len(new_bullets),
             )
@@ -615,14 +667,18 @@ class Orchestrator:
             app.generated.resume_latex = latex_content
             app = await self.history.update(app)
             await self._emit_stage(
-                emit, STAGE_RENDERING_LATEX, "complete",
+                emit,
+                STAGE_RENDERING_LATEX,
+                "complete",
                 latex_length=len(latex_content),
             )
 
-            await self._emit_complete(emit, app, sections=existing_sections)
+            await self._emit_complete(emit, app)
             logger.info(
                 "Section regenerated: app=%s section=%s (%d bullets)",
-                app.id, section_key, len(new_bullets),
+                app.id,
+                section_key,
+                len(new_bullets),
             )
             return app
 
@@ -755,7 +811,7 @@ class Orchestrator:
         underlying data is missing.
         """
         if section_key.startswith("project:"):
-            project_id = section_key[len("project:"):]
+            project_id = section_key[len("project:") :]
             project = self.project_service.get_by_id(project_id)
             if project is None:
                 raise ValueError(f"Project '{project_id}' not found in sweep data")
@@ -763,18 +819,31 @@ class Orchestrator:
 
         if section_key.startswith("experience:"):
             # Match by normalized company name
-            target_slug = section_key[len("experience:"):].lower().replace("-", " ")
+            target_slug = section_key[len("experience:") :].lower().replace("-", " ")
             for exp in profile.experience:
                 exp_slug = exp.company.lower().replace(" ", "-")
-                if exp_slug == section_key[len("experience:"):] or exp.company.lower() == target_slug:
-                    return "Experience", f"{exp.role} @ {exp.company}", _format_experience_details(exp)
+                if (
+                    exp_slug == section_key[len("experience:") :]
+                    or exp.company.lower() == target_slug
+                ):
+                    return (
+                        "Experience",
+                        f"{exp.role} @ {exp.company}",
+                        _format_experience_details(exp),
+                    )
             raise ValueError(
                 f"Experience entry matching '{section_key}' not found in profile"
             )
 
         # Fallback for top-level sections (education, skills, etc.)
         # These typically don't need regeneration, but provide a basic context.
-        if section_key in ("education", "skills", "publications", "leadership", "certifications"):
+        if section_key in (
+            "education",
+            "skills",
+            "publications",
+            "leadership",
+            "certifications",
+        ):
             return section_key.capitalize(), section_key.replace("_", " ").title(), ""
 
         raise ValueError(f"Unrecognised section key: '{section_key}'")
@@ -823,13 +892,17 @@ class Orchestrator:
         total_tokens = 0
         if app.generated and app.generated.resume_points:
             total_tokens = sum(
-                len(b.text.split()) for s in app.generated.resume_points for b in s.bullets
+                len(b.text.split())
+                for s in app.generated.resume_points
+                for b in s.bullets
             )
 
         event_type, data = SSEEventBuilder.complete(
             app.id,
             latex=app.generated.resume_latex if app.generated else "",
-            sections=[s.model_dump() for s in app.generated.resume_points] if app.generated else [],
+            sections=[s.model_dump() for s in app.generated.resume_points]
+            if app.generated
+            else [],
             total_tokens=total_tokens,
             **extra,
         )
@@ -882,9 +955,12 @@ class Orchestrator:
         an SSE section_complete event.
         """
 
-        async def on_section_complete(section_key: str, bullet_texts: list[str]) -> None:
+        async def on_section_complete(
+            section_key: str, bullet_texts: list[str]
+        ) -> None:
             event_type, data = SSEEventBuilder.section_complete(
-                section_key, len(bullet_texts),
+                section_key,
+                len(bullet_texts),
             )
             await emit(event_type, data)
 
@@ -910,6 +986,35 @@ class Orchestrator:
     # Error handling
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _format_user_error(exc: Exception) -> str:
+        """Map exceptions to user-friendly error messages for SSE events.
+
+        Returns a human-readable message suitable for display in the UI,
+        while the raw exception is logged server-side.
+        """
+        if isinstance(exc, LLMRateLimitError):
+            return (
+                "Our AI service is currently experiencing high demand "
+                "(quota exhausted). Please try again later."
+            )
+        if isinstance(exc, LLMAuthError):
+            return (
+                "Our AI service provider rejected the request — "
+                "the API key may be invalid or expired."
+            )
+        if isinstance(exc, LLMConnectionError):
+            return (
+                "Unable to reach the AI service provider. "
+                "Please check your network connection and try again."
+            )
+        if isinstance(exc, LLMParseError):
+            return "The AI generated an unexpected response. Please try again."
+        return (
+            "An unexpected error occurred while generating your resume. "
+            "Please try again or contact support."
+        )
+
     async def _handle_pipeline_error(
         self,
         emit: Callable[[str, dict], Awaitable[None]],
@@ -918,22 +1023,26 @@ class Orchestrator:
     ) -> Application:
         """Unified error handler for pipeline failures.
 
-        Sets the application to ``FAILED``, records the error message, persists
-        the application, emits an SSE error event, and returns the application.
+        Sets the application to ``FAILED``, records the raw error message,
+        persists the application, emits a user-friendly SSE error event,
+        and returns the application.
         """
         stage = self._infer_current_stage(app)
-        error_msg = f"{type(exc).__name__}: {exc}"
-        logger.exception("Pipeline error at stage '%s': %s", stage, error_msg)
+        raw_error = f"{type(exc).__name__}: {exc}"
+        user_msg = self._format_user_error(exc)
+        logger.exception("Pipeline error at stage '%s': %s", stage, raw_error)
 
         app.generation_status = GenerationStatus.FAILED
-        app.error_message = error_msg
+        app.error_message = raw_error
 
         try:
             app = await self.history.update(app)
         except Exception as persist_exc:
-            logger.error("Failed to persist failed application %s: %s", app.id, persist_exc)
+            logger.error(
+                "Failed to persist failed application %s: %s", app.id, persist_exc
+            )
 
-        await self._emit_error(emit, stage, error_msg)
+        await self._emit_error(emit, stage, user_msg)
         return app
 
     @staticmethod

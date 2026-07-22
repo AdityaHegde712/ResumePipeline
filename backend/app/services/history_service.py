@@ -1,6 +1,7 @@
 """
 History service — manages per-application JSON files in data/applications/.
 """
+import asyncio
 import json
 import logging
 from datetime import datetime, date
@@ -38,6 +39,14 @@ class HistoryService:
         # Next in sequence (1-indexed)
         return f"{prefix}{count + 1:03d}"
 
+    def _write_json(self, file_path: Path, app: Application) -> None:
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(app.model_dump(mode="json"), f, indent=2, default=str)
+
+    def _read_json(self, file_path: Path) -> dict:
+        with open(file_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+
     async def create(self, app: Application) -> Application:
         """Create a new application record with auto-generated ID."""
         if not app.id:
@@ -45,11 +54,10 @@ class HistoryService:
         now = datetime.now()
         app.created_at = now
         app.updated_at = now
-        
+
         file_path = self.applications_dir / f"{app.id}.json"
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(app.model_dump(mode="json"), f, indent=2, default=str)
-        
+        await asyncio.to_thread(self._write_json, file_path, app)
+
         logger.info(f"Created application: {app.id}")
         return app
 
@@ -58,10 +66,9 @@ class HistoryService:
         file_path = self.applications_dir / f"{app_id}.json"
         if not file_path.exists():
             return None
-        
+
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
+            data = await asyncio.to_thread(self._read_json, file_path)
             return Application(**data)
         except (json.JSONDecodeError, Exception) as e:
             logger.error(f"Failed to parse {file_path}: {e}")
@@ -71,14 +78,13 @@ class HistoryService:
         """List all applications sorted by created_at desc (without full generated content)."""
         if not self.applications_dir.exists():
             return []
-        
+
         apps = []
         for f in sorted(self.applications_dir.iterdir(), key=lambda x: x.name, reverse=True):
             if f.suffix != ".json":
                 continue
             try:
-                with open(f, "r", encoding="utf-8") as fh:
-                    data = json.load(fh)
+                data = await asyncio.to_thread(self._read_json, f)
                 # Return summary without generated content for performance
                 apps.append({
                     "id": data.get("id"),
@@ -92,17 +98,16 @@ class HistoryService:
             except (json.JSONDecodeError, Exception) as e:
                 logger.warning(f"Skipping corrupt file {f.name}: {e}")
                 continue
-        
+
         return apps
 
     async def update(self, app: Application) -> Application:
         """Update an existing application record."""
         app.updated_at = datetime.now()
-        
+
         file_path = self.applications_dir / f"{app.id}.json"
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(app.model_dump(mode="json"), f, indent=2, default=str)
-        
+        await asyncio.to_thread(self._write_json, file_path, app)
+
         logger.info(f"Updated application: {app.id}")
         return app
 
@@ -111,7 +116,7 @@ class HistoryService:
         file_path = self.applications_dir / f"{app_id}.json"
         if not file_path.exists():
             return False
-        
+
         file_path.unlink()
         logger.info(f"Deleted application: {app_id}")
         return True
