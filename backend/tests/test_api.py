@@ -377,6 +377,45 @@ class TestGeneration:
         assert "event: stage" in resp.text
         assert "event: complete" in resp.text
 
+    def test_regenerate_section_calls_orchestrator_with_correct_arg_order(self, client, sample_application):
+        """Regression: this call site used to pass (app_id, section_key,
+        custom_instructions, emit) against a signature of (app_id, section_key,
+        emit, custom_instructions=""). Both are 4 positional args so it never
+        raised a TypeError -- emit silently became a string and
+        custom_instructions became the callable, crashing on first emit() use.
+        Assert the argument order matches the orchestrator's real signature."""
+        captured_calls = []
+
+        async def mock_regenerate_section(*args):
+            # A bare AsyncMock never calls emit(), which would hang
+            # _sse_event_generator forever waiting on an empty queue --
+            # this stub emits a real "complete" event like the actual method does.
+            captured_calls.append(args)
+            emit = args[2]
+            await emit("complete", {"application_id": "app-20260625-001"})
+            return sample_application
+
+        mock_orch = MagicMock()
+        mock_orch.regenerate_section = mock_regenerate_section
+
+        with patch("app.api.resume.get_orchestrator", return_value=mock_orch):
+            resp = client.post(
+                "/api/generate/regenerate-section",
+                json={
+                    "application_id": "app-20260625-001",
+                    "section_key": "project:test-project",
+                    "custom_instructions": "Make it punchier",
+                },
+                headers={"Accept": "text/event-stream"},
+            )
+
+        assert resp.status_code == 200
+        call_args = captured_calls[0]
+        assert call_args[0] == "app-20260625-001"
+        assert call_args[1] == "project:test-project"
+        assert callable(call_args[2]), "third positional arg must be the emit callback"
+        assert call_args[3] == "Make it punchier", "fourth positional arg must be custom_instructions"
+
     def test_export_tex_found(self, client, sample_application):
         """Download .tex for completed application."""
         mock_history = MagicMock()

@@ -91,15 +91,19 @@ class MatchingService:
         self, results: list[MatchResult], projects: list[ProjectEntry]
     ) -> list[MatchResult]:
         """Validate LLM results and enforce constraints."""
-        valid_ids = {p.id for p in projects}
+        project_map = {p.id: p for p in projects}
         validated = []
-        
+
         for r in results:
             # Clamp score to 0-1
             r.relevance_score = max(0.0, min(1.0, r.relevance_score))
-            
+
             # Only include projects that actually exist
-            if r.project_id in valid_ids:
+            project = project_map.get(r.project_id)
+            if project is not None:
+                # Trust local data over the LLM's echo — the prompt never
+                # asks for project_name, so this fills it deterministically.
+                r.project_name = project.name
                 validated.append(r)
             else:
                 logger.warning(f"MatchResult referenced unknown project: {r.project_id}")

@@ -168,8 +168,8 @@ async def regenerate_section(request: PointsRegenerateRequest):
         return await orchestrator.regenerate_section(
             request.application_id,
             request.section_key,
-            request.custom_instructions or "",
             emit,
+            request.custom_instructions or "",
         )
 
     return StreamingResponse(

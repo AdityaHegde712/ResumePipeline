@@ -36,7 +36,7 @@ class MatchRequest(BaseModel):
 
 class MatchResult(BaseModel):
     project_id: str
-    project_name: str
+    project_name: str = ""
     relevance_score: float
     reasoning: str
 
