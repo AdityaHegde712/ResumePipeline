@@ -38,6 +38,7 @@ export default function NewApplication() {
           setPageState('error');
         },
         onComplete: (result) => {
+          setGenMessage('');
           const appId = (result as Record<string, unknown>)?.application_id as string;
           if (appId) navigate(`/review/${appId}`);
         },

@@ -70,6 +70,7 @@ export default function ReviewEdit() {
         setGenMessage(`Running ${stage.replace(/_/g, ' ')}...`);
         if (stage === 'rendering_latex') {
           setTimeout(() => {
+            setGenMessage('');
             navigate(`/export/${id}`);
           }, 1000);
         }

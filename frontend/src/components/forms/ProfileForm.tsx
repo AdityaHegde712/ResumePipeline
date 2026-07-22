@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { UserProfile, Education, Experience, PersonalProject, Publication, Certificate, Leadership } from '../../types';
+import type { UserProfile, Education, Experience, Publication, Certificate, Leadership } from '../../types';
 import TagInput from '../common/TagInput';
 import styles from './ProfileForm.module.css';
 
@@ -10,21 +10,21 @@ interface ProfileFormProps {
 
 const EMPTY_EDUCATION = (): Education => ({ school: '', degree: '', start_date: '', end_date: '', location: '', coursework: [] });
 const EMPTY_EXPERIENCE = (): Experience => ({ company: '', role: '', start_date: '', end_date: '', location: '', description: '', highlights: [] });
-const EMPTY_PROJECT = (): PersonalProject => ({ name: '', tech_stack: [], description: '' });
+
 const EMPTY_PUBLICATION = (): Publication => ({ title: '', authors: '', venue: '', year: '' });
 const EMPTY_CERTIFICATE = (): Certificate => ({ name: '', issuer: '' });
 const EMPTY_LEADERSHIP = (): Leadership => ({ organization: '', role: '', start_date: '', end_date: '', description: '' });
 
-type SectionKey = 'personal' | 'links' | 'education' | 'experience' | 'projects' | 'publications' | 'skills' | 'certifications' | 'leadership' | 'section_order';
+type SectionKey = 'personal' | 'links' | 'education' | 'experience' | 'projects' | 'publications' | 'certifications' | 'leadership' | 'section_order';
 
 const ALL_SECTIONS: { key: SectionKey; label: string }[] = [
   { key: 'personal', label: 'Personal Info' },
   { key: 'links', label: 'Links' },
   { key: 'education', label: 'Education' },
   { key: 'experience', label: 'Experience' },
-  { key: 'projects', label: 'Personal Projects' },
+
   { key: 'publications', label: 'Publications' },
-  { key: 'skills', label: 'Skills' },
+
   { key: 'certifications', label: 'Certifications' },
   { key: 'leadership', label: 'Leadership' },
   { key: 'section_order', label: 'Section Order' },
@@ -91,8 +91,8 @@ export default function ProfileForm({ profile, onChange }: ProfileFormProps) {
                         <div className={styles.grid2}>
                           <input className={styles.input} placeholder="School" value={edu.school} onChange={(e) => onChange({ ...profile, education: updateArrayItem(profile.education, i, { school: e.target.value }) })} />
                           <input className={styles.input} placeholder="Degree" value={edu.degree} onChange={(e) => onChange({ ...profile, education: updateArrayItem(profile.education, i, { degree: e.target.value }) })} />
-                          <input className={styles.input} placeholder="Start Date" value={edu.start_date} onChange={(e) => onChange({ ...profile, education: updateArrayItem(profile.education, i, { start_date: e.target.value }) })} />
-                          <input className={styles.input} placeholder="End Date" value={edu.end_date} onChange={(e) => onChange({ ...profile, education: updateArrayItem(profile.education, i, { end_date: e.target.value }) })} />
+                          <input className={styles.input} type="date" value={edu.start_date} onChange={(e) => onChange({ ...profile, education: updateArrayItem(profile.education, i, { start_date: e.target.value }) })} />
+                          <input className={styles.input} type="date" value={edu.end_date} onChange={(e) => onChange({ ...profile, education: updateArrayItem(profile.education, i, { end_date: e.target.value }) })} />
                           <input className={styles.input} placeholder="Location" value={edu.location} onChange={(e) => onChange({ ...profile, education: updateArrayItem(profile.education, i, { location: e.target.value }) })} />
                           <input className={styles.input} placeholder="GPA (optional)" value={edu.gpa || ''} onChange={(e) => onChange({ ...profile, education: updateArrayItem(profile.education, i, { gpa: e.target.value }) })} />
                         </div>
@@ -113,8 +113,8 @@ export default function ProfileForm({ profile, onChange }: ProfileFormProps) {
                         <div className={styles.grid2}>
                           <input className={styles.input} placeholder="Company" value={exp.company} onChange={(e) => onChange({ ...profile, experience: updateArrayItem(profile.experience, i, { company: e.target.value }) })} />
                           <input className={styles.input} placeholder="Role" value={exp.role} onChange={(e) => onChange({ ...profile, experience: updateArrayItem(profile.experience, i, { role: e.target.value }) })} />
-                          <input className={styles.input} placeholder="Start Date" value={exp.start_date} onChange={(e) => onChange({ ...profile, experience: updateArrayItem(profile.experience, i, { start_date: e.target.value }) })} />
-                          <input className={styles.input} placeholder="End Date" value={exp.end_date} onChange={(e) => onChange({ ...profile, experience: updateArrayItem(profile.experience, i, { end_date: e.target.value }) })} />
+                          <input className={styles.input} type="date" value={exp.start_date} onChange={(e) => onChange({ ...profile, experience: updateArrayItem(profile.experience, i, { start_date: e.target.value }) })} />
+                          <input className={styles.input} type="date" value={exp.end_date} onChange={(e) => onChange({ ...profile, experience: updateArrayItem(profile.experience, i, { end_date: e.target.value }) })} />
                           <input className={styles.input} placeholder="Location" value={exp.location} onChange={(e) => onChange({ ...profile, experience: updateArrayItem(profile.experience, i, { location: e.target.value }) })} />
                         </div>
                         <textarea className={styles.textarea} placeholder="Description" value={exp.description} onChange={(e) => onChange({ ...profile, experience: updateArrayItem(profile.experience, i, { description: e.target.value }) })} rows={3} />
@@ -124,54 +124,22 @@ export default function ProfileForm({ profile, onChange }: ProfileFormProps) {
                     <button type="button" className={styles.addBtn} onClick={() => onChange({ ...profile, experience: [...profile.experience, EMPTY_EXPERIENCE()] })}>+ Add Experience</button>
                   </div>
                 )}
-                {key === 'projects' && (
-                  <div>
-                    {profile.personal_projects.map((proj, i) => (
-                      <div key={i} className={styles.entryCard}>
-                        <div className={styles.entryHeader}>
-                          <span>{proj.name || `Project #${i + 1}`}</span>
-                          <button type="button" className={styles.removeBtn} onClick={() => onChange({ ...profile, personal_projects: profile.personal_projects.filter((_, j) => j !== i) })}>✕</button>
-                        </div>
-                        <div className={styles.grid2}>
-                          <input className={styles.input} placeholder="Project Name" value={proj.name} onChange={(e) => onChange({ ...profile, personal_projects: updateArrayItem(profile.personal_projects, i, { name: e.target.value }) })} />
-                          <input className={styles.input} placeholder="URL (optional)" value={proj.url || ''} onChange={(e) => onChange({ ...profile, personal_projects: updateArrayItem(profile.personal_projects, i, { url: e.target.value }) })} />
-                        </div>
-                        <textarea className={styles.textarea} placeholder="Description" value={proj.description} onChange={(e) => onChange({ ...profile, personal_projects: updateArrayItem(profile.personal_projects, i, { description: e.target.value }) })} rows={2} />
-                        <TagInput tags={proj.tech_stack} onChange={(tags) => onChange({ ...profile, personal_projects: updateArrayItem(profile.personal_projects, i, { tech_stack: tags }) })} placeholder="Add tech..." label="Tech Stack" />
-                      </div>
-                    ))}
-                    <button type="button" className={styles.addBtn} onClick={() => onChange({ ...profile, personal_projects: [...profile.personal_projects, EMPTY_PROJECT()] })}>+ Add Project</button>
-                  </div>
-                )}
+
                 {key === 'publications' && (
                   <div>
                     {profile.publications.map((pub, i) => (
                       <div key={i} className={styles.entryCard}>
                         <div className={styles.entryHeader}>
-                          <span>{pub.title || `Publication #${i + 1}`}</span>
+                          <span>{`Publication #${i + 1}`}</span>
                           <button type="button" className={styles.removeBtn} onClick={() => onChange({ ...profile, publications: profile.publications.filter((_, j) => j !== i) })}>✕</button>
                         </div>
-                        <div className={styles.grid2}>
-                          <input className={styles.input} placeholder="Title" value={pub.title} onChange={(e) => onChange({ ...profile, publications: updateArrayItem(profile.publications, i, { title: e.target.value }) })} />
-                          <input className={styles.input} placeholder="Authors" value={pub.authors} onChange={(e) => onChange({ ...profile, publications: updateArrayItem(profile.publications, i, { authors: e.target.value }) })} />
-                          <input className={styles.input} placeholder="Venue" value={pub.venue} onChange={(e) => onChange({ ...profile, publications: updateArrayItem(profile.publications, i, { venue: e.target.value }) })} />
-                          <input className={styles.input} placeholder="Year" value={pub.year} onChange={(e) => onChange({ ...profile, publications: updateArrayItem(profile.publications, i, { year: e.target.value }) })} />
-                          <input className={styles.input} placeholder="URL (optional)" value={pub.url || ''} onChange={(e) => onChange({ ...profile, publications: updateArrayItem(profile.publications, i, { url: e.target.value }) })} />
-                        </div>
-                        <textarea className={styles.textarea} placeholder="Description (optional)" value={pub.description || ''} onChange={(e) => onChange({ ...profile, publications: updateArrayItem(profile.publications, i, { description: e.target.value }) })} rows={2} />
+                        <textarea className={styles.textarea} placeholder="Full citation (e.g. LastName et al., Title, Venue, Year)" value={pub.title} onChange={(e) => onChange({ ...profile, publications: updateArrayItem(profile.publications, i, { title: e.target.value }) })} rows={2} />
                       </div>
                     ))}
                     <button type="button" className={styles.addBtn} onClick={() => onChange({ ...profile, publications: [...profile.publications, EMPTY_PUBLICATION()] })}>+ Add Publication</button>
                   </div>
                 )}
-                {key === 'skills' && (
-                  <div className={styles.skillsGrid}>
-                    <TagInput tags={profile.skills.languages} onChange={(tags) => onChange({ ...profile, skills: { ...profile.skills, languages: tags } })} placeholder="Add language..." label="Languages" />
-                    <TagInput tags={profile.skills.frameworks} onChange={(tags) => onChange({ ...profile, skills: { ...profile.skills, frameworks: tags } })} placeholder="Add framework..." label="Frameworks" />
-                    <TagInput tags={profile.skills.tools} onChange={(tags) => onChange({ ...profile, skills: { ...profile.skills, tools: tags } })} placeholder="Add tool..." label="Tools" />
-                    <TagInput tags={profile.skills.domains} onChange={(tags) => onChange({ ...profile, skills: { ...profile.skills, domains: tags } })} placeholder="Add domain..." label="Domains" />
-                  </div>
-                )}
+
                 {key === 'certifications' && (
                   <div>
                     {profile.certifications.map((cert, i) => (
@@ -202,8 +170,8 @@ export default function ProfileForm({ profile, onChange }: ProfileFormProps) {
                         <div className={styles.grid2}>
                           <input className={styles.input} placeholder="Organization" value={lead.organization} onChange={(e) => onChange({ ...profile, leadership: updateArrayItem(profile.leadership, i, { organization: e.target.value }) })} />
                           <input className={styles.input} placeholder="Role" value={lead.role} onChange={(e) => onChange({ ...profile, leadership: updateArrayItem(profile.leadership, i, { role: e.target.value }) })} />
-                          <input className={styles.input} placeholder="Start Date" value={lead.start_date} onChange={(e) => onChange({ ...profile, leadership: updateArrayItem(profile.leadership, i, { start_date: e.target.value }) })} />
-                          <input className={styles.input} placeholder="End Date" value={lead.end_date} onChange={(e) => onChange({ ...profile, leadership: updateArrayItem(profile.leadership, i, { end_date: e.target.value }) })} />
+                          <input className={styles.input} type="date" value={lead.start_date} onChange={(e) => onChange({ ...profile, leadership: updateArrayItem(profile.leadership, i, { start_date: e.target.value }) })} />
+                          <input className={styles.input} type="date" value={lead.end_date} onChange={(e) => onChange({ ...profile, leadership: updateArrayItem(profile.leadership, i, { end_date: e.target.value }) })} />
                         </div>
                         <textarea className={styles.textarea} placeholder="Description" value={lead.description} onChange={(e) => onChange({ ...profile, leadership: updateArrayItem(profile.leadership, i, { description: e.target.value }) })} rows={2} />
                       </div>
