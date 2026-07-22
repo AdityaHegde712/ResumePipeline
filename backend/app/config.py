@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     # ── Paths ──
     data_dir: Path = Path("./data")
-    sweep_file_path: Path = Path("../../PROJECT_SWEEP_SUMMARIES.md")
+    sweep_file_path: Path = Path("../docs/PROJECT_SWEEP_SUMMARIES.md")
     latex_template_path: Path = Path("./app/templates/latex/resume_template.tex.j2")
 
     # ── Server ──
