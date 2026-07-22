@@ -1,38 +1,27 @@
-# Plan: PDFCompiler Implementation
+# Dockerize ResumePipeline for Development Mode
 
-## Task
-Create `backend/app/pipeline/pdf_compiler.py` implementing the `PDFCompiler` class
-that wraps MiKTeX's `pdflatex.exe`.
+## Objective
+Create Docker configuration files for the ResumePipeline project (Python/FastAPI backend + React/Vite frontend) to enable development mode with hot-reload.
 
-## Why General-Builder?
-This is a standalone utility component that bridges system-level subprocess
-management (MiKTeX) with the FastAPI application layer. It is not purely
-backend (no DB/routes), not frontend, and not ML — a cross-cutting build task
-best suited for the generalist agent.
+## Rationale for General-Builder Assignment
+This task spans both backend and frontend layers — creating Dockerfiles, docker-compose orchestration, and .dockerignore files — making it a perfect fit for the General-Builder role rather than a layer-specific specialist.
 
-## Design
+## Plan
 
-### Components
-1. **`PDFResult`** — Pydantic `BaseModel` for compilation results
-2. **`PDFCompiler`** — Main class wrapping pdflatex
-3. **Error classes** — `PDFCompilerUnavailableError`, `PDFCompilerTimeoutError`,
-   `PDFCompilerError`
+### Files to Create
+1. `backend/Dockerfile` — Python 3.12-slim + uv + uvicorn with `--reload`
+2. `frontend/Dockerfile` — Node 20-alpine + npm ci + Vite dev server with `--host 0.0.0.0`
+3. `backend/.dockerignore` — Exclude .venv, __pycache__, .env, etc.
+4. `frontend/.dockerignore` — Exclude node_modules, dist
+5. `docker-compose.yml` — Orchestrate both services with hot-reload volumes
 
-### Compilation flow
-1. Write `.tex` file (UTF-8)
-2. Run 3-pass `pdflatex -interaction=nonstopmode` with 30s timeout per pass
-3. Parse `.log` for errors, warnings, page count
-4. Verify `.pdf` exists and > 0 bytes
-5. On success: read bytes, clean up intermediates (`.aux`, `.log`, `.out`, `.toc`)
-6. On failure: return `PDFResult(success=False, ...)` or raise on timeout
+### Key Design Decisions
+- **Named volume `backend-venv`** at `/app/.venv` prevents the host machine's `.venv` from shadowing the container's installed packages when the host code is mounted
+- **Anonymous volume `/app/node_modules`** ensures the container's node_modules survive the host mount
+- **Host source mounts** (`./backend:/app`, `./frontend:/app`) enable file change detection for hot-reload
+- **`env_file`** passes `GEMINI_API_KEY` and other environment variables from `backend/.env`
 
-### Key decisions
-- Use `asyncio.create_subprocess_exec` for async subprocess management
-- Set `MIKTEX_AUTOINSTALL=1` in subprocess env for MiKTeX auto-package-install
-- `get_compiler_version()` uses synchronous `subprocess.run` (diagnostic tool)
-- Retry logic in `compile_with_retry` only retries timeouts and zero-byte PDFs
-  (not deterministic LaTeX errors)
-
-## Files
-- **Create**: `backend/app/pipeline/pdf_compiler.py` (~320 lines)
-- **Create**: `.agent-tasks/general-builder/STATUS.md` (this plan)
+### Verification
+- Run `docker compose build` and confirm both images build without errors
+- Both images should be taggable as `resumepipeline-backend:latest` and `resumepipeline-frontend:latest`
+- No existing files should be modified

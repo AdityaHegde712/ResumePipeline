@@ -1,0 +1,22 @@
+name: test
+email: test@example.com
+phone: test
+location: test
+links:
+  linkedin: null
+  github: null
+  portfolio: null
+  website: null
+education: []
+experience: []
+personal_projects: []
+publications: []
+skills:
+  languages: []
+  frameworks: []
+  tools: []
+  domains: []
+certifications: []
+leadership: []
+custom_sections: []
+section_order: []

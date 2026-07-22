@@ -42,6 +42,9 @@ Thumbs.db
 *.log
 tmp/
 
+# Agent task environment snapshots (may contain secrets)
+.agent-tasks/env_snapshot.json
+
 # Documents
 docs/next_time*
 docs/PROJECT_SWEEP_SUMMARIES.md

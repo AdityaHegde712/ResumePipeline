@@ -1,0 +1,66 @@
+[
+  {
+    "method": "GET",
+    "path": "/api/projects",
+    "handler": "list_projects",
+    "file": "backend/app/api/projects.py",
+    "line": 41,
+    "params": { "path": [], "query": [], "body": {} },
+    "source": "manual"
+  },
+  {
+    "method": "GET",
+    "path": "/api/projects/search",
+    "handler": "search_projects",
+    "file": "backend/app/api/projects.py",
+    "line": 56,
+    "params": {
+      "path": [],
+      "query": [{"name": "q", "type": "str"}],
+      "body": {}
+    },
+    "source": "manual"
+  },
+  {
+    "method": "GET",
+    "path": "/api/projects/{project_id}",
+    "handler": "get_project",
+    "file": "backend/app/api/projects.py",
+    "line": 74,
+    "params": {
+      "path": [{"name": "project_id", "type": "str"}],
+      "query": [],
+      "body": {}
+    },
+    "source": "manual"
+  },
+  {
+    "method": "POST",
+    "path": "/api/projects/refresh",
+    "handler": "refresh_projects",
+    "file": "backend/app/api/projects.py",
+    "line": 91,
+    "params": { "path": [], "query": [], "body": {} },
+    "source": "manual"
+  },
+  {
+    "method": "POST",
+    "path": "/api/projects/match",
+    "handler": "match_projects",
+    "file": "backend/app/api/projects.py",
+    "line": 106,
+    "params": {
+      "path": [],
+      "query": [],
+      "body": {
+        "model": "MatchRequest",
+        "fields": {
+          "job_title": "str",
+          "company_name": "str",
+          "job_description": "str"
+        }
+      }
+    },
+    "source": "manual"
+  }
+]

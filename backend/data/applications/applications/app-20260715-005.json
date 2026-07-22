@@ -1,0 +1,194 @@
+{
+  "id": "app-20260715-005",
+  "created_at": "2026-07-15T19:39:27.668466",
+  "updated_at": "2026-07-15T19:42:10.968312",
+  "company_name": "ByteDance",
+  "company_description": "The ByteDance Seed team is dedicated to pioneering paths toward artificial general intelligence.",
+  "job_title": "Student Researcher (AI Foundation Models Infrastructure)",
+  "job_description": "Responsibilities: Assist in building and optimizing large-scale distributed training systems. Qualifications: Currently pursuing a Bachelor's or Master's degree in Computer Science. Proficiency in Python or C++. Familiarity with PyTorch.",
+  "selected_project_ids": [
+    "recsysproject",
+    "sentry",
+    "opencode",
+    "spacedebrisresearch",
+    "autoencoders"
+  ],
+  "generation_status": "generating_points",
+  "generated": {
+    "resume_points": [
+      {
+        "section_key": "project:recsysproject",
+        "section_title": "RecSysProject",
+        "bullets": [
+          {
+            "id": "regenerated-project:recsysproject-0",
+            "section": "project:recsysproject",
+            "text": "Engineered a high-performance data preprocessing pipeline in Python to handle 50GB of streaming data, utilizing k-core filtering and Parquet storage to streamline infrastructure for large-scale model training.",
+            "order": 0,
+            "edited": false
+          },
+          {
+            "id": "regenerated-project:recsysproject-1",
+            "section": "project:recsysproject",
+            "text": "Implemented eight distinct deep learning architectures using PyTorch, optimizing GPU memory management and training loops to achieve a state-of-the-art HR@10 of 0.8808 on the HotelRec dataset.",
+            "order": 1,
+            "edited": false
+          },
+          {
+            "id": "regenerated-project:recsysproject-2",
+            "section": "project:recsysproject",
+            "text": "Optimized model ranking performance by developing a stacked meta-ensemble with LambdaRank, leveraging automated grid search and YAML-driven configurations to manage complex experimentation.",
+            "order": 2,
+            "edited": false
+          },
+          {
+            "id": "regenerated-project:recsysproject-3",
+            "section": "project:recsysproject",
+            "text": "Built a reproducible research infrastructure for a three-person team, featuring fully scripted pipelines and seed-fixed randomness to ensure consistency across distributed development tracks.",
+            "order": 3,
+            "edited": false
+          }
+        ]
+      },
+      {
+        "section_key": "project:sentry",
+        "section_title": "Sentry",
+        "bullets": [
+          {
+            "id": "25ce6caf-8bff-4385-b93b-b26c1e9db773",
+            "section": "project:sentry",
+            "text": "Engineered a high-throughput ML inference pipeline using Python and PyTorch, optimizing cascaded model execution via ONNX to achieve real-time processing of concurrent video streams.",
+            "order": 0,
+            "edited": false
+          },
+          {
+            "id": "f5c898af-7a95-4751-b0dd-75d53a497bb9",
+            "section": "project:sentry",
+            "text": "Architected scalable distributed infrastructure on AWS using ECS Fargate and Terraform, leveraging Redis for state management to ensure low-latency synchronization across distributed nodes.",
+            "order": 1,
+            "edited": false
+          },
+          {
+            "id": "a7b4e8f7-b04e-4b34-b5bf-c7cd7243efb3",
+            "section": "project:sentry",
+            "text": "Optimized backend service performance by implementing Docker multi-stage builds and Gunicorn-managed Flask APIs, reducing deployment overhead and enhancing system reliability for large-scale workloads.",
+            "order": 2,
+            "edited": false
+          },
+          {
+            "id": "65283ca2-e1b9-42a0-8a1b-cbb7af76416f",
+            "section": "project:sentry",
+            "text": "Built an automated MLOps workflow for model versioning and S3-based distribution, streamlining the deployment of optimized computer vision models across a distributed computing environment.",
+            "order": 3,
+            "edited": false
+          }
+        ]
+      },
+      {
+        "section_key": "project:opencode",
+        "section_title": "Opencode",
+        "bullets": [
+          {
+            "id": "a2092706-66ce-4e41-8547-d73d2ab9ad00",
+            "section": "project:opencode",
+            "text": "Engineered a C-level LD_PRELOAD shim and socket handling layer to optimize low-level system interactions, improving communication efficiency for distributed AI agent environments.",
+            "order": 0,
+            "edited": false
+          },
+          {
+            "id": "e94f6f07-8c41-4c35-a591-d869870149b0",
+            "section": "project:opencode",
+            "text": "Built a modular LLM evaluation harness using Python and the Model Context Protocol (MCP) to automate performance benchmarking across 11 specialized domains, ensuring production-grade reliability.",
+            "order": 1,
+            "edited": false
+          },
+          {
+            "id": "145c80cf-c6f3-4fd2-9cfd-214b24699c9a",
+            "section": "project:opencode",
+            "text": "Implemented high-performance data processing modules for complex formats including OOXML and PDF using Python, incorporating defensive programming and safe XML parsing to support large-scale document ingestion for model training.",
+            "order": 2,
+            "edited": false
+          },
+          {
+            "id": "2abb57c1-93f6-47aa-8449-02bb08b6a792",
+            "section": "project:opencode",
+            "text": "Architected a scalable AI development ecosystem with 11 domain-specific agents, integrating Anthropic APIs and reusable Python skills to assist in the rapid prototyping and optimization of foundation model infrastructure.",
+            "order": 3,
+            "edited": false
+          }
+        ]
+      },
+      {
+        "section_key": "project:spacedebrisresearch",
+        "section_title": "SpaceDebrisResearch",
+        "bullets": [
+          {
+            "id": "0d02c42f-a335-4b03-83ac-f89e0c5464f7",
+            "section": "project:spacedebrisresearch",
+            "text": "Engineered a scalable data processing pipeline in Python to ingest and normalize 13.59M Vector Covariance Message (VCM) snapshots, supporting large-scale training for 19,300 cataloged orbital objects.",
+            "order": 0,
+            "edited": false
+          },
+          {
+            "id": "1a60a7c6-0701-418a-a60c-9ec7a63e6191",
+            "section": "project:spacedebrisresearch",
+            "text": "Architected a hybrid physics-ML framework using PyTorch to replace deterministic models with 3D voxel-based occupancy maps, enhancing the precision of probabilistic risk assessment.",
+            "order": 1,
+            "edited": false
+          },
+          {
+            "id": "3d4ea08a-76fe-41d5-8601-d273bb9bb641",
+            "section": "project:spacedebrisresearch",
+            "text": "Optimized high-fidelity orbital simulations by implementing RK4 propagation and J2 perturbation algorithms in C++, significantly improving the throughput of the training data generation infrastructure.",
+            "order": 2,
+            "edited": false
+          },
+          {
+            "id": "2f4fb23d-476b-43c0-9cae-73f72266ed02",
+            "section": "project:spacedebrisresearch",
+            "text": "Designed a robust feature engineering suite comprising 41 physics-informed parameters across 7 groups, pivoting research strategy to resolve model convergence issues in complex trajectory predictions.",
+            "order": 3,
+            "edited": false
+          }
+        ]
+      },
+      {
+        "section_key": "project:autoencoders",
+        "section_title": "Autoencoders",
+        "bullets": [
+          {
+            "id": "76ca1d56-5536-4e43-ad6d-2b3c12d44426",
+            "section": "project:autoencoders",
+            "text": "Engineered a learned video compression pipeline using asymmetric autoencoders in PyTorch, achieving a 57\u201373\u00d7 compression ratio on the VIRAT aerial surveillance dataset.",
+            "order": 0,
+            "edited": false
+          },
+          {
+            "id": "7ba4dac2-8a68-4125-9c80-6a9cda7b0e83",
+            "section": "project:autoencoders",
+            "text": "Architected a high-performance streaming infrastructure using Kafka and binary serialization to process video residuals with sub-100ms latency for real-time inference.",
+            "order": 1,
+            "edited": false
+          },
+          {
+            "id": "308c73bf-a33e-4225-9df1-8d56257ec998",
+            "section": "project:autoencoders",
+            "text": "Optimized rate-distortion trade-offs via a custom Group-of-Pictures (GOP) framework, reaching 28.37 dB PSNR and 0.820 SSIM at 0.656 BPP for high-fidelity reconstruction.",
+            "order": 2,
+            "edited": false
+          },
+          {
+            "id": "befe1688-70d3-46f3-a577-eb37f992ece1",
+            "section": "project:autoencoders",
+            "text": "Built an end-to-end data ingestion and preprocessing pipeline using Python and FFmpeg to manage 4.9 GB of video data, streamlining large-scale training for AI research.",
+            "order": 3,
+            "edited": false
+          }
+        ]
+      }
+    ],
+    "resume_latex": "%-------------------------\n% Resume in Latex\n% Author : Jake Gutierrez\n% Based off of: https://github.com/sb2nov/resume\n% License : MIT\n%------------------------\n\n\\documentclass[letterpaper,11pt]{article}\n\n\\usepackage{latexsym}\n\\usepackage[empty]{fullpage}\n\\usepackage{titlesec}\n\\usepackage{marvosym}\n\\usepackage[usenames,dvipsnames]{color}\n\\usepackage{verbatim}\n\\usepackage{enumitem}\n\\usepackage[hidelinks]{hyperref}\n\\usepackage{fancyhdr}\n\\usepackage[english]{babel}\n\\usepackage{tabularx}\n\\usepackage{fontawesome5}\n\\usepackage{multicol}\n\\setlength{\\multicolsep}{-3.0pt}\n\\setlength{\\columnsep}{-1pt}\n\\input{glyphtounicode}\n\n\n%----------FONT OPTIONS----------\n% sans-serif\n% \\usepackage[sfdefault]{FiraSans}\n% \\usepackage[sfdefault]{roboto}\n% \\usepackage[sfdefault]{noto-sans}\n% \\usepackage[default]{sourcesanspro}\n\n% serif\n% \\usepackage{CormorantGaramond}\n% \\usepackage{charter}\n\n\n\\pagestyle{fancy}\n\\fancyhf{} % clear all header and footer fields\n\\fancyfoot{}\n\\renewcommand{\\headrulewidth}{0pt}\n\\renewcommand{\\footrulewidth}{0pt}\n\n% Adjust margins\n\\addtolength{\\oddsidemargin}{-0.6in}\n\\addtolength{\\evensidemargin}{-0.5in}\n\\addtolength{\\textwidth}{1.19in}\n\\addtolength{\\topmargin}{-.7in}\n\\addtolength{\\textheight}{1.4in}\n\n\\urlstyle{same}\n\n\\raggedbottom\n\\raggedright\n\\setlength{\\tabcolsep}{0in}\n\n% Sections formatting\n\\titleformat{\\section}{\n  \\vspace{-4pt}\\scshape\\raggedright\\large\\bfseries\n}{}{0em}{}[\\color{black}\\titlerule \\vspace{-5pt}]\n\n% Ensure that generate pdf is machine readable/ATS parsable\n\\pdfgentounicode=1\n\n\n%-------------------------\n% Custom commands\n\\newcommand{\\resumeItem}[1]{\n  \\item\\small{\n    {#1 \\vspace{-2pt}}\n  }\n}\n\n\\newcommand{\\classesList}[4]{\n    \\item\\small{\n        {#1 #2 #3 #4 \\vspace{-2pt}}\n  }\n}\n\n\\newcommand{\\resumeSubheading}[4]{\n  \\vspace{-2pt}\\item\n    \\begin{tabular*}{1.0\\textwidth}[t]{l@{\\extracolsep{\\fill}}r}\n      \\textbf{#1} & \\textbf{\\small #2} \\\\\n      \\textit{\\small#3} & \\textit{\\small #4} \\\\\n    \\end{tabular*}\\vspace{-7pt}\n}\n\n\\newcommand{\\resumeSubSubheading}[2]{\n    \\item\n    \\begin{tabular*}{0.97\\textwidth}{l@{\\extracolsep{\\fill}}r}\n      \\textit{\\small#1} & \\textit{\\small #2} \\\\\n    \\end{tabular*}\\vspace{-7pt}\n}\n\n\\newcommand{\\resumeProjectHeading}[2]{\n    \\item\n    \\begin{tabular*}{1.001\\textwidth}{l@{\\extracolsep{\\fill}}r}\n      \\small#1 & \\textbf{\\small #2}\\\\\n    \\end{tabular*}\\vspace{-7pt}\n}\n\n\\newcommand{\\resumeSubItem}[1]{\\resumeItem{#1}\\vspace{-4pt}}\n\n\\renewcommand\\labelitemi{$\\vcenter{\\hbox{\\tiny$\\bullet$}}$}\n\\renewcommand\\labelitemii{$\\vcenter{\\hbox{\\tiny$\\bullet$}}$}\n\n\\newcommand{\\resumeSubHeadingListStart}{\\begin{itemize}[leftmargin=0.0in, label={}]}\n\\newcommand{\\resumeSubHeadingListEnd}{\\end{itemize}}\n\\newcommand{\\resumeItemListStart}{\\begin{itemize}}\n\\newcommand{\\resumeItemListEnd}{\\end{itemize}\\vspace{-5pt}}\n\n%-------------------------------------------\n%%%%%%  RESUME STARTS HERE  %%%%%%%%%%%%%%%%%%%%%%%%%%%%\n\n\n\\begin{document}\n\n%----------HEADING----------\n\\begin{center}\n    {\\Huge \\scshape test} \\\\ \\vspace{5pt}\n    \\small\n\\raisebox{-0.1\\height}\\faPhone\\ test ~\\href{mailto:test@example.com}{\\raisebox{-0.2\\height}\\faEnvelope\\  \\underline{ test@example.com }} ~ \\\\ \\vspace{3pt}\n    test    \\vspace{-8pt}\n\\end{center}\n\n\n%-----------SECTIONS (pre-built by LaTeXRenderer)-----------\n\n\n\\end{document}",
+    "model_used": "gemini/gemini-3-flash-preview"
+  },
+  "error_message": null
+}

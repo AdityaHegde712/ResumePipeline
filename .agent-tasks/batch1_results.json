@@ -1,0 +1,210 @@
+{
+  "base_url": "http://localhost:8000",
+  "timestamp": "2026-06-29T17:33:12.167247+00:00",
+  "summary": {
+    "pass": 7,
+    "flaky": 0,
+    "fail": 0,
+    "auth-gated": 0,
+    "skipped": 0,
+    "no-connection": 0
+  },
+  "results": [
+    {
+      "id": "get_/api/health_0",
+      "method": "GET",
+      "path": "/api/health",
+      "url": "http://localhost:8000/api/health",
+      "payload": null,
+      "headers_injected": [
+        "Authorization",
+        "X-API-Key"
+      ],
+      "path_substitutions": {},
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "body_excerpt": "{\"status\":\"ok\",\"version\":\"1.0.0\"}",
+          "final_url": "http://localhost:8000/api/health",
+          "redirect": false,
+          "error": null,
+          "elapsed_ms": 291
+        }
+      ],
+      "result": "pass",
+      "skip_reason": null
+    },
+    {
+      "id": "get_/api/profile_1",
+      "method": "GET",
+      "path": "/api/profile",
+      "url": "http://localhost:8000/api/profile",
+      "payload": null,
+      "headers_injected": [
+        "Authorization",
+        "X-API-Key"
+      ],
+      "path_substitutions": {},
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "body_excerpt": "{\"name\":\"Aditya Hegde\",\"email\":\"\",\"phone\":\"\",\"location\":\"\",\"links\":{\"linkedin\":null,\"github\":null,\"portfolio\":null,\"website\":null},\"education\":[],\"experience\":[],\"personal_projects\":[],\"publications\":[],\"skills\":{\"languages\":[],\"frameworks\":[],\"tools\":[],\"domains\":[]},\"certifications\":[],\"leadership\":[],\"custom_sections\":[],\"section_order\":[\"education\",\"skills\",\"projects\",\"experience\",\"publications\",\"leadership\",\"certifications\"],\"subjective_profile_path\":\"data/subjective_profile.md\",\"subjective",
+          "final_url": "http://localhost:8000/api/profile",
+          "redirect": false,
+          "error": null,
+          "elapsed_ms": 286
+        }
+      ],
+      "result": "pass",
+      "skip_reason": null
+    },
+    {
+      "id": "get_/api/profile/exists_2",
+      "method": "GET",
+      "path": "/api/profile/exists",
+      "url": "http://localhost:8000/api/profile/exists",
+      "payload": null,
+      "headers_injected": [
+        "Authorization",
+        "X-API-Key"
+      ],
+      "path_substitutions": {},
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "body_excerpt": "{\"exists\":false}",
+          "final_url": "http://localhost:8000/api/profile/exists",
+          "redirect": false,
+          "error": null,
+          "elapsed_ms": 265
+        }
+      ],
+      "result": "pass",
+      "skip_reason": null
+    },
+    {
+      "id": "put_/api/profile_3",
+      "method": "PUT",
+      "path": "/api/profile",
+      "url": "http://localhost:8000/api/profile",
+      "payload": {
+        "name": "test",
+        "email": "test@example.com",
+        "phone": "test",
+        "location": "test",
+        "links": {},
+        "education": [],
+        "experience": [],
+        "personal_projects": [],
+        "publications": [],
+        "skills": {},
+        "certifications": [],
+        "leadership": [],
+        "custom_sections": [],
+        "section_order": [],
+        "subjective_profile_path": "test",
+        "subjective_profile_content": "test"
+      },
+      "headers_injected": [
+        "Authorization",
+        "X-API-Key"
+      ],
+      "path_substitutions": {},
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "body_excerpt": "{\"name\":\"test\",\"email\":\"test@example.com\",\"phone\":\"test\",\"location\":\"test\",\"links\":{\"linkedin\":null,\"github\":null,\"portfolio\":null,\"website\":null},\"education\":[],\"experience\":[],\"personal_projects\":[],\"publications\":[],\"skills\":{\"languages\":[],\"frameworks\":[],\"tools\":[],\"domains\":[]},\"certifications\":[],\"leadership\":[],\"custom_sections\":[],\"section_order\":[],\"subjective_profile_path\":\"test\",\"subjective_profile_content\":\"test\"}",
+          "final_url": "http://localhost:8000/api/profile",
+          "redirect": false,
+          "error": null,
+          "elapsed_ms": 286
+        }
+      ],
+      "result": "pass",
+      "skip_reason": null
+    },
+    {
+      "id": "get_/api/config/llm_4",
+      "method": "GET",
+      "path": "/api/config/llm",
+      "url": "http://localhost:8000/api/config/llm",
+      "payload": null,
+      "headers_injected": [
+        "Authorization",
+        "X-API-Key"
+      ],
+      "path_substitutions": {},
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "body_excerpt": "{\"default_provider\":\"gemini\",\"default_model\":\"gemini-3-flash-preview\",\"tasks\":{}}",
+          "final_url": "http://localhost:8000/api/config/llm",
+          "redirect": false,
+          "error": null,
+          "elapsed_ms": 286
+        }
+      ],
+      "result": "pass",
+      "skip_reason": null
+    },
+    {
+      "id": "put_/api/config/llm_5",
+      "method": "PUT",
+      "path": "/api/config/llm",
+      "url": "http://localhost:8000/api/config/llm",
+      "payload": {
+        "default_provider": "test",
+        "default_model": "test",
+        "tasks": {}
+      },
+      "headers_injected": [
+        "Authorization",
+        "X-API-Key"
+      ],
+      "path_substitutions": {},
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "body_excerpt": "{\"default_provider\":\"test\",\"default_model\":\"test\",\"tasks\":{}}",
+          "final_url": "http://localhost:8000/api/config/llm",
+          "redirect": false,
+          "error": null,
+          "elapsed_ms": 286
+        }
+      ],
+      "result": "pass",
+      "skip_reason": null
+    },
+    {
+      "id": "get_/api/config/pdf-available_6",
+      "method": "GET",
+      "path": "/api/config/pdf-available",
+      "url": "http://localhost:8000/api/config/pdf-available",
+      "payload": null,
+      "headers_injected": [
+        "Authorization",
+        "X-API-Key"
+      ],
+      "path_substitutions": {},
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "body_excerpt": "{\"available\":true}",
+          "final_url": "http://localhost:8000/api/config/pdf-available",
+          "redirect": false,
+          "error": null,
+          "elapsed_ms": 286
+        }
+      ],
+      "result": "pass",
+      "skip_reason": null
+    }
+  ]
+}

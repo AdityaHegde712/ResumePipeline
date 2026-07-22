@@ -1,0 +1,163 @@
+{
+  "base_url": "http://localhost:8000",
+  "timestamp": "2026-06-29T17:33:01.554623+00:00",
+  "summary": {
+    "pass": 3,
+    "flaky": 0,
+    "fail": 2,
+    "auth-gated": 0,
+    "skipped": 0,
+    "no-connection": 0
+  },
+  "results": [
+    {
+      "id": "get_/api/projects_0",
+      "method": "GET",
+      "path": "/api/projects",
+      "url": "http://localhost:8000/api/projects",
+      "payload": null,
+      "headers_injected": [
+        "Authorization",
+        "X-API-Key"
+      ],
+      "path_substitutions": {},
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "body_excerpt": "{\"projects\":[{\"id\":\"arvr\",\"name\":\"ARVR\",\"type\":\"Full-Stack Web Application (AR/VR + AI)\",\"summary\":\"A full-stack Progressive Web App that lets users search for furniture via natural language conversation and instantly place 3D models into their real-world environment using Augmented Reality. Bridges three complex domains \u2014 conversational AI, immersive WebXR rendering, and touch-based 3D manipulation \u2014 into a single cohesive mobile-first experience. The app runs entirely in the browser with zero ",
+          "final_url": "http://localhost:8000/api/projects",
+          "redirect": false,
+          "error": null,
+          "elapsed_ms": 3429
+        }
+      ],
+      "result": "pass",
+      "skip_reason": null
+    },
+    {
+      "id": "get_/api/projects/search_1",
+      "method": "GET",
+      "path": "/api/projects/search",
+      "url": "http://localhost:8000/api/projects/search",
+      "payload": null,
+      "headers_injected": [
+        "Authorization",
+        "X-API-Key"
+      ],
+      "path_substitutions": {},
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "body_excerpt": "{\"query\":\"test\",\"results\":[{\"id\":\"randoms\",\"name\":\"Randoms\",\"type\":\"Utility Tools (Python)\",\"summary\":\"Two independent Python utility tools: a game bookmark searcher/launcher and a bill splitting script. Demonstrates modular software design, comprehensive testing, and modern Python packaging.\",\"tech_stack\":[],\"key_features\":[],\"resume_value_bullets\":[\"**Modular design:** Single-responsibility modules with clean pipeline orchestration\",\"**Pure stdlib proficiency:** html.parser, argparse, urllib.p",
+          "final_url": "http://localhost:8000/api/projects/search?q=test",
+          "redirect": true,
+          "error": null,
+          "elapsed_ms": 3423
+        }
+      ],
+      "result": "pass",
+      "skip_reason": null
+    },
+    {
+      "id": "get_/api/projects/{project_id}_2",
+      "method": "GET",
+      "path": "/api/projects/{project_id}",
+      "url": "http://localhost:8000/api/projects/test",
+      "payload": null,
+      "headers_injected": [
+        "Authorization",
+        "X-API-Key"
+      ],
+      "path_substitutions": {
+        "project_id": "test"
+      },
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": 404,
+          "body_excerpt": "{\"detail\":\"Project 'test' not found.\"}",
+          "final_url": "http://localhost:8000/api/projects/test",
+          "redirect": false,
+          "error": null,
+          "elapsed_ms": 269
+        },
+        {
+          "attempt": 2,
+          "status": 404,
+          "body_excerpt": "{\"detail\":\"Project 'test' not found.\"}",
+          "final_url": "http://localhost:8000/api/projects/test",
+          "redirect": false,
+          "error": null,
+          "elapsed_ms": 1651
+        }
+      ],
+      "result": "fail",
+      "skip_reason": null
+    },
+    {
+      "id": "post_/api/projects/refresh_3",
+      "method": "POST",
+      "path": "/api/projects/refresh",
+      "url": "http://localhost:8000/api/projects/refresh",
+      "payload": {},
+      "headers_injected": [
+        "Authorization",
+        "X-API-Key"
+      ],
+      "path_substitutions": {},
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "body_excerpt": "{\"status\":\"ok\",\"projects_count\":17}",
+          "final_url": "http://localhost:8000/api/projects/refresh",
+          "redirect": false,
+          "error": null,
+          "elapsed_ms": 3423
+        }
+      ],
+      "result": "pass",
+      "skip_reason": null
+    },
+    {
+      "id": "post_/api/projects/match_4",
+      "method": "POST",
+      "path": "/api/projects/match",
+      "url": "http://localhost:8000/api/projects/match",
+      "payload": {
+        "job_title": "test",
+        "company_name": "test",
+        "job_description": "test"
+      },
+      "headers_injected": [
+        "Authorization",
+        "X-API-Key"
+      ],
+      "path_substitutions": {},
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": 500,
+          "body_excerpt": "{\"detail\":\"Project matching failed.\"}",
+          "final_url": "http://localhost:8000/api/projects/match",
+          "redirect": false,
+          "error": null,
+          "elapsed_ms": 3854
+        },
+        {
+          "attempt": 2,
+          "status": 500,
+          "body_excerpt": "{\"detail\":\"Project matching failed.\"}",
+          "final_url": "http://localhost:8000/api/projects/match",
+          "redirect": false,
+          "error": null,
+          "elapsed_ms": 153
+        }
+      ],
+      "result": "fail",
+      "skip_reason": null
+    }
+  ]
+}

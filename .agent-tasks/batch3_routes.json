@@ -1,0 +1,85 @@
+[
+  {
+    "method": "GET",
+    "path": "/api/applications",
+    "params": {
+      "path": [],
+      "query": [],
+      "body": {"fields": {}}
+    },
+    "source": "user-provided (Batch 3)"
+  },
+  {
+    "method": "GET",
+    "path": "/api/applications/{application_id}",
+    "params": {
+      "path": [{"name": "application_id", "type": "int"}],
+      "query": [],
+      "body": {"fields": {}}
+    },
+    "source": "user-provided (Batch 3)"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/applications/{application_id}",
+    "params": {
+      "path": [{"name": "application_id", "type": "int"}],
+      "query": [],
+      "body": {"fields": {}}
+    },
+    "source": "user-provided (Batch 3)"
+  },
+  {
+    "method": "GET",
+    "path": "/api/generate/{application_id}/tex",
+    "params": {
+      "path": [{"name": "application_id", "type": "int"}],
+      "query": [],
+      "body": {"fields": {}}
+    },
+    "source": "user-provided (Batch 3)"
+  },
+  {
+    "method": "GET",
+    "path": "/api/generate/{application_id}/pdf",
+    "params": {
+      "path": [{"name": "application_id", "type": "int"}],
+      "query": [],
+      "body": {"fields": {}}
+    },
+    "source": "user-provided (Batch 3)"
+  },
+  {
+    "method": "POST",
+    "path": "/api/generate/points",
+    "params": {
+      "path": [],
+      "query": [],
+      "body": {"fields": {}}
+    },
+    "notes": "SSE streaming endpoint",
+    "source": "user-provided (Batch 3)"
+  },
+  {
+    "method": "POST",
+    "path": "/api/generate/resume",
+    "params": {
+      "path": [],
+      "query": [],
+      "body": {"fields": {}}
+    },
+    "notes": "SSE streaming endpoint",
+    "source": "user-provided (Batch 3)"
+  },
+  {
+    "method": "POST",
+    "path": "/api/generate/regenerate-section",
+    "params": {
+      "path": [],
+      "query": [],
+      "body": {"fields": {}}
+    },
+    "notes": "SSE streaming endpoint",
+    "source": "user-provided (Batch 3)"
+  }
+]
