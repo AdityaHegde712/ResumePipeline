@@ -1,0 +1,33 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount source code for hot-reload
+      - ./backend:/app
+      # Persist .venv so it's not overwritten by host mount
+      - backend-venv:/app/.venv
+    env_file:
+      - ./backend/.env
+    environment:
+      - LITELLM_LOG=DEBUG
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    volumes:
+      # Mount source code for hot-reload
+      - ./frontend:/app
+      # Keep container's node_modules, ignore host node_modules
+      - /app/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  backend-venv:
