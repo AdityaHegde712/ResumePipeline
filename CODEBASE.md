@@ -1,6 +1,6 @@
 # Codebase Overview
 
-> Full-stack application that generates ATS-optimized resume bullet points and compilable LaTeX resumes from a project portfolio, personal profile, and target job descriptions -- powered by Gemini 3 Flash Preview via a provider-agnostic LLM abstraction layer.
+> Full-stack application that generates ATS-optimized resume bullet points and compilable LaTeX resumes from a project portfolio, personal profile, and target job descriptions -- powered by Gemini via a provider-agnostic LLM abstraction layer.
 
 **Last updated:** 2026-07-01
 **Primary language:** Python 3.12+ (backend), TypeScript 5.6 (frontend)
@@ -12,14 +12,14 @@
 
 The system is a two-process monolith: a Python FastAPI backend (`:8000`) and a React/Vite frontend (`:5173`). There is no database -- all state is file-based (YAML profile, Markdown project summaries, per-application JSON files).
 
-A user pastes a job description into the frontend. The backend's `Orchestrator` runs an 8-stage pipeline: load projects from `docs/PROJECT_SWEEP_SUMMARIES.md`, match relevant projects via LLM, analyze keywords, generate ATS-optimized bullet points (streamed via SSE), compile/deduplicate sections, render to LaTeX via Jinja2, and optionally compile to PDF via MiKTeX. Each stage emits progress events over Server-Sent Events (SSE) to the frontend.
+A user pastes a job description into the frontend. The backend's `Orchestrator` runs an 8-stage pipeline: load projects from `PROJECT_SWEEP_SUMMARIES.md`, match relevant projects via LLM, analyze keywords, generate ATS-optimized bullet points (streamed via SSE), compile/deduplicate sections, render to LaTeX via Jinja2, and optionally compile to PDF via MiKTeX. Each stage emits progress events over Server-Sent Events (SSE) to the frontend.
 
 LLM calls go through LiteLLM, making the provider swappable without code changes. The backend is fully async (FastAPI + asyncio). Tests use `pytest-asyncio` in auto mode.
 
 ```mermaid
 graph LR
     Frontend[React 19 + Vite] -->|REST + SSE| API[FastAPI Backend]
-    API -->|LiteLLM| LLM[Gemini 3 Flash Preview]
+    API -->|LiteLLM| LLM[Gemini / DeepSeek / OpenAI]
     API -->|read/write| Files[(YAML / MD / JSON)]
     API -->|Jinja2 + pdflatex| PDF[(PDF via MiKTeX)]
 ```
@@ -194,7 +194,7 @@ npm run test
 - `LLM_DEFAULT_MODEL` -- Defaults to `gemini/gemini-3-flash-preview`; override to use a different provider
 - `PDFLATEX_PATH` -- Optional; path to `pdflatex` binary for PDF compilation
 - `CORS_ORIGINS` -- Defaults to `http://localhost:5173`
-- `SWEEP_FILE_PATH` -- Optional; path to project summaries file (defaults to `../../PROJECT_SWEEP_SUMMARIES.md` relative to CWD)
+- `SWEEP_FILE_PATH` -- Optional; path to project summaries file (defaults to `../docs/PROJECT_SWEEP_SUMMARIES.md` relative to backend/)
 
 ---
 
@@ -223,6 +223,7 @@ The project has no CI workflows, Docker setup, or deployment automation. It runs
 - Prompt templates in `backend/app/templates/prompts/` can be overridden at runtime via env vars. If a prompt seems to produce unexpected output, check for env var overrides before editing the `.j2` file.
 - `LLMService._handle_error()` classifies exceptions by string matching on the error message. Adding new error types requires updating this method. The `503`/`ServiceUnavailable` classification as `LLMConnectionError` is intentional -- these are transient and retried.
 - The `/api/projects/match` endpoint creates its own `LLMService` and `MatchingService` instances (not the shared orchestrator services). If you change service initialization, update both `get_orchestrator()` in `api/resume.py` and the match endpoint in `api/projects.py`.
+- SSE streaming endpoints (`/points`, `/resume`, `/regenerate-section`) use `StreamingResponse` with `text/event-stream`. The frontend depends on receiving `stage`, `token`, `section_complete`, `error`, and `complete` event types. Changing the SSE contract breaks the streaming UI.
 
 ---
 
@@ -243,11 +244,11 @@ The `docs/` directory contains:
 
 ## Testing
 
-184 pytest tests across 9 test files. Run with `cd backend && uv run pytest`.
+203 pytest tests across 11 test files. Run with `cd backend && uv run pytest`.
 
 | Test file | Coverage area |
 |---|---|
-| `tests/test_api.py` | API endpoint integration tests |
+| `tests/test_api.py` | API endpoint integration tests; SSE streaming, parameter order validation |
 | `tests/test_llm_service.py` | LLM client, retry logic, error classification |
 | `tests/test_prompt_manager.py` | Template loading, env-var overrides, caching |
 | `tests/test_profile_service.py` | YAML profile loading |
@@ -255,4 +256,6 @@ The `docs/` directory contains:
 | `tests/test_keyword_analysis_service.py` | Keyword extraction |
 | `tests/test_latex_renderer.py` | LaTeX template rendering |
 | `tests/test_history_service.py` | Application persistence |
+| `tests/test_matching_service.py` | LLM result validation, project_name backfilling (regression) |
+| `tests/test_orchestrator.py` | Orchestrator error formatting, end-to-end kwarg collision (regression) |
 | `tests/test_phase7_regressions.py` | Phase 7 bug fixes (PromptManager args, LLM config, SSE serialization) |
