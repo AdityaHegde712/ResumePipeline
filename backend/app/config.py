@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     # ── Paths ──
     data_dir: Path = Path("./data")
     sweep_file_path: Path = Path("../docs/PROJECT_SWEEP_SUMMARIES.md")
-    latex_template_path: Path = Path("./app/templates/latex/resume_template.tex.j2")
+    latex_template_path: Path = Path("../docs/tex_templates/template_blank.tex")
 
     # ── Server ──
     cors_origins: str = "http://localhost:5173"

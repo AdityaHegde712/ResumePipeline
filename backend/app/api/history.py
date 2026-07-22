@@ -25,7 +25,7 @@ def get_history_service() -> HistoryService:
     if _history_service is None:
         from app.config import settings
 
-        _history_service = HistoryService(settings.data_dir / "applications")
+        _history_service = HistoryService(settings.data_dir)
     return _history_service
 
 

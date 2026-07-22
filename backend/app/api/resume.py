@@ -54,7 +54,7 @@ def get_orchestrator() -> "Orchestrator":
 
         profile_service = ProfileService(settings.data_dir)
         project_service = ProjectSweepService(settings.sweep_file_path)
-        history_service = HistoryService(settings.data_dir / "applications")
+        history_service = HistoryService(settings.data_dir)
         llm_service = LLMService(config=get_llm_config())
         prompt_manager = PromptManager(Path("./app/templates/prompts"), settings)
 
@@ -189,7 +189,7 @@ async def export_tex(application_id: str):
     from app.services.history_service import HistoryService
     from app.config import settings
 
-    history = HistoryService(settings.data_dir / "applications")
+    history = HistoryService(settings.data_dir)
     app_record = await history.get(application_id)
 
     if app_record is None:
@@ -222,7 +222,7 @@ async def export_pdf(application_id: str):
     from app.services.history_service import HistoryService
     from app.pipeline.pdf_compiler import PDFCompiler
 
-    history = HistoryService(settings.data_dir / "applications")
+    history = HistoryService(settings.data_dir)
     app_record = await history.get(application_id)
 
     if app_record is None:

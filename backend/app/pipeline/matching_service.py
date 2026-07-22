@@ -63,7 +63,7 @@ class MatchingService:
         
         # Validate and sort results
         validated = self._validate_results(results, projects)
-        return validated[:8]  # Top 8 max
+        return validated[:3]  # Top 3 max (prompt requests 2-3)
 
     def format_projects_for_prompt(self, projects: list[ProjectEntry]) -> list[dict]:
         """Format projects for prompt template with tech stack priming.

@@ -3,6 +3,7 @@
 .env.*
 !.env.example
 session
+local_llm
 
 # Python
 __pycache__/
@@ -18,7 +19,7 @@ dist/
 *.tsbuildinfo
 
 # Data (keep .gitkeep, track applications json)
-data/applications/*.json
+backend/data/applications/*.json
 !data/applications/.gitkeep
 
 # IDE
@@ -44,6 +45,9 @@ tmp/
 
 # Agent task files (local only, not pushed to cloud)
 .agent-tasks/
+CLAUDE*.md
+todo.md
+scratch.txt
 
 # Documents
 docs/next_time*
