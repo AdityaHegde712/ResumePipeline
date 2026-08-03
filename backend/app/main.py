@@ -17,6 +17,11 @@ _DEV_CORS_ORIGINS = [
 ]
 
 
+def _health() -> dict[str, str]:
+    """Return a minimal liveness payload for GET /health."""
+    return {"status": "ok"}
+
+
 def create_app() -> FastAPI:
     """Create and return the configured FastAPI application.
 
@@ -37,6 +42,7 @@ def create_app() -> FastAPI:
         yield
 
     app = FastAPI(title="ResumePipeline", lifespan=lifespan)
+    app.add_api_route("/health", _health, methods=["GET"])
     app.add_middleware(
         CORSMiddleware,
         allow_origins=_DEV_CORS_ORIGINS,

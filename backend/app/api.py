@@ -148,7 +148,8 @@ def get_pdf(application_id: str, request: Request) -> FileResponse:
     """Download resume.pdf as an attachment; 404 when compile failed (D13)."""
     app_dir = _app_dir_or_404(request.app.state.settings.applications_root, application_id)
     pdf_file = app_dir / "resume.pdf"
-    if not pdf_file.is_file():
+    missing_or_empty = not pdf_file.is_file() or pdf_file.stat().st_size == 0
+    if missing_or_empty:
         raise HTTPException(status_code=404, detail="resume.pdf missing")
     return FileResponse(
         pdf_file,

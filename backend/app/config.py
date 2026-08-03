@@ -7,11 +7,17 @@ import shutil
 from pathlib import Path
 from typing import Any
 
+from dotenv import load_dotenv
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 BACKEND_DIR = Path(__file__).resolve().parents[1]
+
+# Load backend/.env into os.environ BEFORE Settings is constructed so the
+# LLM layer (LiteLLM) sees GEMINI_API_KEY. override=False keeps env vars
+# that are already set (tests set APPLICATIONS_ROOT/PDFLATEX_PATH) winning.
+load_dotenv(BACKEND_DIR / ".env", override=False)
 
 # Owner-specified MiKTeX default for this dev machine (architect D11).
 DEFAULT_PDFLATEX_PATH = Path(

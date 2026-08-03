@@ -41,6 +41,8 @@ async def compile_resume(settings: Settings, app_dir: Path) -> Path:
         raise PDFCompileError(f"Missing LaTeX source: {tex_path}")
 
     # Two passes resolve hyperref anchors; each pass gets the full timeout.
+    # A failed pass leaves partial residue; clean it up (keeping resume.log
+    # for diagnostics) so a stale resume.pdf is never served as a product.
     try:
         for _ in range(2):
             await asyncio.to_thread(
@@ -50,9 +52,13 @@ async def compile_resume(settings: Settings, app_dir: Path) -> Path:
                 settings.pdf_compile_timeout_seconds,
             )
     except subprocess.TimeoutExpired as exc:
+        _cleanup_failed_compile(app_dir)
         raise PDFCompileError(
             f"pdflatex timed out after {settings.pdf_compile_timeout_seconds}s"
         ) from exc
+    except PDFCompileError:
+        _cleanup_failed_compile(app_dir)
+        raise
 
     _remove_artifacts(app_dir)
     return app_dir / "resume.pdf"
@@ -80,3 +86,28 @@ def _remove_artifacts(app_dir: Path) -> None:
         artifact = app_dir / f"resume{suffix}"
         if artifact.is_file():
             artifact.unlink()
+
+
+def _cleanup_failed_compile(app_dir: Path) -> None:
+    """Remove partial compile products after a failed pass.
+
+    Deletes any ``resume.pdf`` that is not a valid PDF plus the ``.aux`` /
+    ``.out`` residue, keeping ``resume.log`` for diagnostics.
+    """
+    pdf_path = app_dir / "resume.pdf"
+    has_partial_pdf = pdf_path.is_file() and not _is_valid_pdf(pdf_path)
+    if has_partial_pdf:
+        pdf_path.unlink()
+    for suffix in (".aux", ".out"):
+        artifact = app_dir / f"resume{suffix}"
+        if artifact.is_file():
+            artifact.unlink()
+
+
+def _is_valid_pdf(path: Path) -> bool:
+    """True when the file begins with the PDF magic header."""
+    try:
+        with path.open("rb") as handle:
+            return handle.read(4) == b"%PDF"
+    except OSError:
+        return False
