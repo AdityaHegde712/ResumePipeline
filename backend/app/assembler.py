@@ -145,7 +145,7 @@ def _build_skills_section(parsed: ParsedResume, profile: dict) -> str | None:
 
 def _profile_skill_groups(skills: dict) -> list[tuple[str, str]]:
     """Build (label, joined-items) fallback pairs from profile skill groups."""
-    groups = []
+    groups: list[tuple[str, str]] = []
     for group_key, label in _SKILL_GROUP_LABELS:
         items = [item for item in skills.get(group_key, []) if item]
         if not items:

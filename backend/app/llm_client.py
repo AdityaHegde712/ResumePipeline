@@ -4,7 +4,6 @@ import litellm
 
 from backend.app.config import Settings
 
-
 class LLMError(Exception):
     """Raised for every failure of the resume generation call.
 

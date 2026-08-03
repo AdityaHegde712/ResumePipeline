@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass, field
 
-
 @dataclass
 class ExperienceEntry:
     """One experience block: a header label plus stripped bullet lines."""
@@ -71,7 +70,7 @@ def parse_llm_response(raw_text: str) -> ParsedResume:
 
 def _strip_separators(lines: list[str]) -> list[str]:
     """Drop lines made only of 3+ dashes/equals; keep shorter lines."""
-    kept = []
+    kept: list[str] = []
     for line in lines:
         stripped = line.strip()
         if len(stripped) >= _MIN_SEPARATOR_LENGTH and all(ch in _SEPARATOR_CHARS for ch in stripped):
@@ -120,7 +119,7 @@ def _strip_bullet_prefix(line: str) -> str:
 
 def _parse_skills(lines: list[str]) -> list[tuple[str, str]]:
     """Parse ``type: skill, skill`` lines, splitting on the first colon."""
-    skills = []
+    skills: list[tuple[str, str]] = []
     for line in lines:
         if _is_blank(line):
             continue
@@ -133,7 +132,7 @@ def _parse_skills(lines: list[str]) -> list[tuple[str, str]]:
 
 def _parse_experience(lines: list[str]) -> list[ExperienceEntry]:
     """Parse ``## label`` headers and following bullet lines in order."""
-    entries = []
+    entries: list[ExperienceEntry] = []
     current: ExperienceEntry | None = None
     for line in lines:
         if line.startswith("## "):
@@ -148,7 +147,7 @@ def _parse_experience(lines: list[str]) -> list[ExperienceEntry]:
 
 def _parse_projects(lines: list[str]) -> list[ProjectEntry]:
     """Parse ``## N. name | tech | link`` headers and following bullets."""
-    projects = []
+    projects: list[ProjectEntry] = []
     current: ProjectEntry | None = None
     for line in lines:
         if line.startswith("## "):

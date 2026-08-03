@@ -99,7 +99,7 @@ def list_applications(root: Path) -> list[dict]:
     """
     if not root.is_dir():
         return []
-    entries = []
+    entries: list[dict] = []
     for app_dir in root.iterdir():
         if not app_dir.is_dir():
             continue
