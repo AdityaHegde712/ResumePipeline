@@ -1,0 +1,105 @@
+name: Aditya Hegde
+email: aditya.hegde@sjsu.edu
+phone: 408-396-6553
+location: San Jose, CA
+links:
+  linkedin: https://www.linkedin.com/in/aditya-hegde712
+  github: https://github.com/AdityaHegde712
+  portfolio: https://adityahegde712.github.io
+  website: null
+education:
+  - school: San Jose State University
+    degree: Master of Science in Artificial Intelligence
+    start_date: Aug 2025
+    end_date: May 2027 (Expected)
+    location: San Jose, CA
+    gpa: "4.0"
+    coursework: []
+  - school: Woxsen University
+    degree: Bachelor of Technology in Computer Science Engineering
+    start_date: Sep 2021
+    end_date: May 2025
+    location: Telangana, India
+    gpa: "3.73"
+    coursework:
+      - "Dean's List: 8 semesters"
+      - "Published Researcher: 2 peer-reviewed papers (IEEE ICEPES 2024, Springer ICETSS 2026)"
+experience:
+  - company: SUHORA Technologies Pvt. Ltd.
+    role: Data Scientist Intern
+    start_date: Mar 2024
+    end_date: Jul 2024
+    location: Uttar Pradesh, India
+    description: Built a real-time vision pipeline for maritime surveillance processing 900+ SAR and optical satellite images.
+    highlights:
+      - "Built a real-time vision pipeline for maritime surveillance, processing 900+ SAR and optical satellite images while sustaining over 95% evaluation accuracy and improving detection performance by 40%+ mAP."
+      - "Engineered a C#+Python preprocessing system with parallelized GPU usage, runtime memory guards, and overflow controls, reducing batch inference latency from 7 minutes to sub-1 minute for deployment."
+      - "Stress-tested the pipeline against 15B-pixel batches, achieved 45-second processing per 10,000 km² image, and built a fault-tolerant ingestion system monitoring NAS for continued high-resolution geospatial input."
+      - "Produced GIS-compatible GeoJSON outputs via overlap-aware postprocessing, integrated structured logging with automated exception reporting for rapid debugging, collaborating with engineers to ship models."
+publications:
+  - title: "Machine Learning-Based Space Risk Management: Asteroid and Solar Flare Prediction"
+    authors: "A. Baggu, A. Hegde, H. Morayya, S. A. Yallapragada, and H. Mazumdar"
+    venue: "2024 IEEE 3rd International Conference on Electrical Power and Energy Systems (ICEPES)"
+    year: "2024"
+    url: https://doi.org/10.1109/ICEPES60647.2024.10653497
+    description: "Bhopal, India, 2024, pp. 1–6"
+  - title: "Deep Learning Based Dementia Detection on MRI Data"
+    authors: "Baggu, A., Hegde, A., Morayya, H., Kumar, L., Sattarapu, P., Yallapragada, S.A."
+    venue: "Emerging Technology and Sustainable Solutions. ICETSS 2024. Communications in Computer and Information Science, vol 2610. Springer, Cham"
+    year: "2026"
+    url: https://doi.org/10.1007/978-3-032-11488-4_15
+    description: ""
+skills:
+  languages:
+    - Python
+    - C++ (proficient)
+    - JavaScript
+    - HTML/CSS
+  frameworks:
+    - PyTorch
+    - TensorFlow
+    - ONNX
+    - Scikit-Learn
+    - OpenCV
+    - Keras
+    - Transformers
+    - Flask
+    - FastAPI
+    - Django
+  tools:
+    - AWS (ECS Fargate, Lambda, EC2, CloudWatch, S3)
+    - Terraform
+    - GCP
+    - GitHub CI/CD
+    - Docker
+    - Redis
+    - SQL
+    - Git
+    - Linux
+  domains:
+    - Model Pruning
+    - Static Graph Models (ONNX, TFLite)
+    - Quantization
+    - ByteTrack
+    - Agent Workflows
+    - ReAct
+    - Model APIs
+    - LLM Integration
+    - Multi-Agent Orchestration
+    - REST APIs
+certifications: []
+leadership:
+  - organization: San Jose State University
+    role: Chief Projects Officer, AI&ML Club
+    start_date: Feb 2026
+    end_date: Present
+    description: "Recruited and leading a team of 8 project officers. Managed over 17 projects, spanning 70 active project members and multiple GitHub repositories. Coordinated meetings and secured collaborations with companies for 5 industry-led Club projects."
+custom_sections: []
+section_order:
+  - education
+  - skills
+  - projects
+  - experience
+  - publications
+  - leadership
+  - certifications

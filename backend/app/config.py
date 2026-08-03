@@ -1,52 +1,69 @@
-"""
-Application configuration loaded from environment variables and .env file.
+"""Application settings for ResumePipeline v2.
 
-Uses pydantic-settings BaseSettings for type-safe, validated config.
+All paths are pathlib.Path objects resolved relative to the repository root.
 """
-from pydantic_settings import BaseSettings
+
+import shutil
 from pathlib import Path
-from typing import Optional
+from typing import Any
+
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+
+# Owner-specified MiKTeX default for this dev machine (architect D11).
+DEFAULT_PDFLATEX_PATH = Path(
+    "C:/Users/hifia/AppData/Local/Programs/MiKTeX/miktex/bin/x64/pdflatex.exe"
+)
+
+
+def resolve_pdf_latex_path(env_value: str | None = None) -> Path | None:
+    """Resolve the pdflatex executable via the PDFLATEX_PATH chain.
+
+    A truthy env value wins: a directory gets ``pdflatex.exe`` appended,
+    anything else is used as-is. With no env value, the default MiKTeX path
+    is used if present, then ``shutil.which("pdflatex")`` as a last resort.
+
+    Args:
+        env_value: Raw PDFLATEX_PATH value, or None to skip the env branch.
+
+    Returns:
+        Resolved Path to pdflatex.exe, or None if nothing could be resolved.
+    """
+    if env_value:
+        candidate = Path(env_value).expanduser()
+        if candidate.is_dir():
+            return candidate / "pdflatex.exe"
+        return candidate
+    if DEFAULT_PDFLATEX_PATH.exists():
+        return DEFAULT_PDFLATEX_PATH
+    found = shutil.which("pdflatex")
+    if found:
+        return Path(found)
+    return None
 
 
 class Settings(BaseSettings):
-    # ── LLM — field name maps to GEMINI_API_KEY env var via pydantic-settings ──
-    gemini_api_key: str = ""
-    llm_default_model: str = "gemini/gemini-3-flash-preview"  # reads from LLM_DEFAULT_MODEL env var
-    llm_default_temperature: float = 0.3  # Gemini 3+ models override to 1.0 internally
-    llm_max_tokens: int = 4096
+    """Runtime settings, loaded from environment and backend/.env."""
 
-    # ── Paths ──
-    data_dir: Path = Path("./data")
-    sweep_file_path: Path = Path("../docs/PROJECT_SWEEP_SUMMARIES.md")
-    latex_template_path: Path = Path("../docs/tex_templates/template_blank.tex")
+    model_config = SettingsConfigDict(
+        env_file=BACKEND_DIR / ".env",
+        extra="ignore",
+    )
 
-    # ── Server ──
-    cors_origins: str = "http://localhost:5173"
+    project_root: Path = PROJECT_ROOT
+    backend_dir: Path = BACKEND_DIR
+    model: str = "gemini/gemini-3-flash-preview"
+    temperature: float = 0.2
+    pdf_compile_timeout_seconds: int = 60
+    pdf_latex_path: Path | None = Field(
+        default=None, validation_alias="PDFLATEX_PATH"
+    )
 
-    # ── PDF Compilation (MiKTeX — optional) ──
-    pdflatex_path: Optional[str] = None
-
-    # ── Prompt Overrides (optional — overrides .j2 files at runtime) ──
-    prompt_matching: Optional[str] = None
-    prompt_keyword_analysis: Optional[str] = None
-    prompt_resume_points: Optional[str] = None
-    prompt_resume_writeup: Optional[str] = None
-
-    model_config = {
-        "env_file": ".env",
-        "env_file_encoding": "utf-8",
-        "extra": "ignore",
-    }
-
-    def configure_litellm(self) -> None:
-        """Set the LiteLLM GEMINI_API_KEY in os.environ before any LLM call.
-
-        Call this at startup (and after any key rotation) so LiteLLM can
-        authenticate with Google's Gemini API.
-        """
-        import os
-        os.environ["GEMINI_API_KEY"] = self.gemini_api_key
-
-
-# Singleton — import this everywhere
-settings = Settings()  # type: ignore[call-arg]
+    @field_validator("pdf_latex_path", mode="before")
+    @classmethod
+    def normalize_pdf_latex_path(cls, raw_value: Any) -> Path | None:
+        """Run the raw PDFLATEX_PATH value through the resolution chain."""
+        return resolve_pdf_latex_path(raw_value)

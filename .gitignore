@@ -10,6 +10,7 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .venv/
+uv.lock
 .pytest_cache/
 *.pyc
 
@@ -42,9 +43,13 @@ Thumbs.db
 # Temp
 *.log
 tmp/
+old_code.rar
 
 # Agent task files (local only, not pushed to cloud)
 .agent-tasks/
+.claude
+.compactions
+.opencode
 CLAUDE*.md
 todo.md
 scratch.txt
@@ -55,3 +60,6 @@ docs/PROJECT_SWEEP_SUMMARIES.md
 docs/template*
 docs/*sample*
 docs/postman-testing-guide.md
+
+# Other
+legacy_*
