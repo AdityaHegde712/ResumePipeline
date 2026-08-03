@@ -1,8 +1,10 @@
 r"""Frozen spec tests for the LaTeX assembler (T06, Phase 3).
 
 LOCKED contract — ``backend.app.assembler`` must satisfy this file exactly.
-This file is frozen after Phase 3 and may not be modified to fit an
-implementation.
+Amended by Owner decision (2026-08-03): the section wrapper templates
+(``experience_top``/``experience_bottom``, ``projects_top``/``project_bottom``,
+and ``project_entry_separator``) ARE part of the contract. The previous
+wrapper-free contract was incorrect and has been replaced.
 
 Public interface (all exported from ``backend.app.assembler``):
 
@@ -42,13 +44,20 @@ Assembly rules locked by these tests (PLAN §5):
   groups ``languages``/``frameworks``/``tools``/``domains`` to labels
   ``Languages``/``Frameworks``/``Developer Tools``/``Domains``, each
   group's items joined with ``", "``.
-- ``experience``: one entry per profile entry i. Metadata (role, company,
-  location, ``"start_date -- end_date"``) comes from the profile; bullets
-  come from ``parsed.experience[i].bullets``. When entry i is missing or
-  has no bullets, the profile entry's ``highlights`` are used. Extra LLM
-  entries beyond the profile length are ignored.
-- ``projects``: one entry per parsed project, rendered in LLM output
-  order (relevance) — never sorted by index.
+- ``experience``: the section is ``experience_top`` + entries +
+  ``experience_bottom``. One entry per profile entry i. Metadata (role,
+  company, location, ``"start_date -- end_date"``) comes from the profile;
+  bullets come from ``parsed.experience[i].bullets``. When entry i is
+  missing or has no bullets, the profile entry's ``highlights`` are used.
+  Extra LLM entries beyond the profile length are ignored. Entries are
+  concatenated with NO separator; each entry is
+  ``experience_entry_top`` + ``"\n"`` + bullets joined by ``"\n"`` +
+  ``experience_entry_bottom``.
+- ``projects``: the section is ``projects_top`` + entries joined with
+  ``"\n" + project_entry_separator + "\n"`` + ``project_bottom``. One
+  entry per parsed project, rendered in LLM output order (relevance) —
+  never sorted by index. Each entry is ``project_entry_top`` + bullets
+  joined by ``"\n"`` + ``project_entry_bottom``.
 - Project link resolution: exact ``project_links[project.index]`` first;
   else a normalized fuzzy match of the project name against
   ``sweep_headings`` (lowercase, collapse non-alphanumerics to a space;
@@ -59,16 +68,10 @@ Assembly rules locked by these tests (PLAN §5):
 - ALL LLM-derived and profile-fallback text is escaped with
   ``escape_latex``; static ``resume_config`` templates are never escaped.
 - Empty sections (no content) are omitted from the document.
-- The experience and projects sections contain ONLY the entry-level
-  templates from ``backend.resume_config`` (``experience_entry_top`` /
-  ``experience_entry_bullet`` / ``experience_entry_bottom`` and
-  ``project_entry_top`` / ``project_entry_bullet`` /
-  ``project_entry_bottom``). Section wrapper templates
-  (``experience_top``, ``experience_bottom``, ``projects_top``,
-  ``projects_bottom``) are NOT part of this contract, so the output never
-  contains ``\section{\textbf{Experience}}`` or
-  ``\section{\textbf{Projects}}``. Entries are concatenated with no extra
-  separator.
+- The wrapped experience and projects sections therefore DO contain
+  ``\section{\textbf{Experience}}`` and ``\section{\textbf{Projects}}``.
+  When ``section_order`` lists experience before projects, the experience
+  section renders first.
 
 ``escape_latex`` replaces every occurrence of these ten characters in a
 single pass (left-to-right, inserted escapes are not re-scanned):
@@ -99,13 +102,18 @@ from backend.app.parser import (
 from backend.resume_config import (
     bottommatter,
     education,
+    experience_bottom,
     experience_entry_bottom,
     experience_entry_bullet,
     experience_entry_top,
+    experience_top,
     leadership,
+    project_bottom,
     project_entry_bottom,
     project_entry_bullet,
+    project_entry_separator,
     project_entry_top,
+    projects_top,
     publications,
     skills_bottom,
     skills_bullet,
@@ -150,8 +158,8 @@ def build_golden_profile() -> dict:
         "section_order": [
             "education",
             "skills",
-            "projects",
             "experience",
+            "projects",
             "publications",
             "leadership",
             "certifications",
@@ -191,7 +199,7 @@ def expected_skills_section(groups: list[tuple[str, str]]) -> str:
 
 
 def expected_experience_section(entries: list[dict]) -> str:
-    """Compose the expected experience section; each entry's bullets must be pre-escaped."""
+    """Compose the expected wrapped experience section; each entry's bullets must be pre-escaped."""
 
     rendered = []
     for entry in entries:
@@ -209,7 +217,7 @@ def expected_experience_section(entries: list[dict]) -> str:
             )
             + experience_entry_bottom
         )
-    return "".join(rendered)
+    return experience_top + "".join(rendered) + experience_bottom
 
 
 def expected_project_entry(
@@ -236,6 +244,16 @@ def expected_project_entry(
         heading
         + "\n".join(project_entry_bullet.format(bullet=bullet) for bullet in bullets)
         + project_entry_bottom
+    )
+
+
+def expected_projects_section(entries: list[str]) -> str:
+    """Compose the expected wrapped projects section; ``entries`` are pre-rendered project entries."""
+
+    return (
+        projects_top
+        + ("\n" + project_entry_separator + "\n").join(entries)
+        + project_bottom
     )
 
 
@@ -396,6 +414,7 @@ class TestExperienceSection:
             ]
         )
         doc = assemble_resume(parsed, profile, {}, {})
+        assert "\\section{\\textbf{Experience}}" in doc
         assert doc == "\n\n".join([topmatter, expected_section, bottommatter])
         assert doc.count("\n    \\resumeSubheading") == 1
         assert "AI Research Assistant" not in doc
@@ -437,6 +456,7 @@ class TestExperienceSection:
             ]
         )
         doc = assemble_resume(parsed, profile, {}, {})
+        assert "\\section{\\textbf{Experience}}" in doc
         assert doc == "\n\n".join([topmatter, expected_section, bottommatter])
 
     def test_partial_llm_bullets_fall_back_per_entry(self) -> None:
@@ -468,6 +488,7 @@ class TestExperienceSection:
             ],
         }
         doc = assemble_resume(parsed, profile, {}, {})
+        assert "\\section{\\textbf{Experience}}" in doc
         assert doc.count("\n    \\resumeSubheading") == 2
         assert "LLM bullet for first role" in doc
         assert "WRONG highlight for first role" not in doc
@@ -490,6 +511,7 @@ class TestExperienceSection:
             ],
         }
         doc = assemble_resume(parsed, profile, {}, {})
+        assert "\\section{\\textbf{Experience}}" in doc
         assert "AI \\& ML Engineer \\#1" in doc
 
 
@@ -522,7 +544,32 @@ class TestProjectsSection:
             ],
         )
         profile = {"section_order": ["projects"], "skills": {}, "experience": []}
+        expected_section = expected_projects_section(
+            [
+                expected_project_entry(
+                    name="Sentry",
+                    tech="Python, FastAPI, YOLO",
+                    link="https://github.com/Aero-inc/sentry",
+                    bullets=["Built a real-time video threat detection platform."],
+                ),
+                expected_project_entry(
+                    name="ARVR",
+                    tech="React, TypeScript, Three.js, WebXR",
+                    link="https://github.com/AdityaHegde712/ARVR",
+                    bullets=["Developed a PWA for natural-language furniture search."],
+                ),
+                expected_project_entry(
+                    name="WorkoutApp",
+                    tech="React Native, Firebase, Expo",
+                    link="https://github.com/AdityaHegde712/FitnessTracker",
+                    bullets=["Built a cross-platform fitness tracker."],
+                ),
+            ]
+        )
         doc = assemble_resume(parsed, profile, GOLDEN_SWEEP_HEADINGS, GOLDEN_PROJECT_LINKS)
+        assert "\\section{\\textbf{Projects}}" in doc
+        assert doc.count("\n\\vspace{-2pt}\n") == 2
+        assert doc == "\n\n".join([topmatter, expected_section, bottommatter])
         assert doc.index("Sentry") < doc.index("ARVR") < doc.index("WorkoutApp")
         assert "\\resumeLink{https://github.com/Aero-inc/sentry}" in doc
         assert "\\resumeLink{https://github.com/AdityaHegde712/ARVR}" in doc
@@ -535,7 +582,19 @@ class TestProjectsSection:
             projects=[ProjectEntry(index=11, name="Sentry", tech="Python", bullets=["b"])],
         )
         profile = {"section_order": ["projects"], "skills": {}, "experience": []}
+        expected_section = expected_projects_section(
+            [
+                expected_project_entry(
+                    name="Sentry",
+                    tech="Python",
+                    link="https://github.com/Aero-inc/sentry",
+                    bullets=["b"],
+                )
+            ]
+        )
         doc = assemble_resume(parsed, profile, GOLDEN_SWEEP_HEADINGS, GOLDEN_PROJECT_LINKS)
+        assert "\\section{\\textbf{Projects}}" in doc
+        assert doc == "\n\n".join([topmatter, expected_section, bottommatter])
         assert "\\resumeLink{https://github.com/Aero-inc/sentry}" in doc
 
     def test_index_missing_from_links_falls_back_to_name(self) -> None:
@@ -606,6 +665,7 @@ class TestProjectsSection:
         )
         profile = {"section_order": ["projects"], "skills": {}, "experience": []}
         doc = assemble_resume(parsed, profile, {}, {})
+        assert "\\section{\\textbf{Projects}}" in doc
         assert "\\resumeLink{" not in doc
         assert "{\\textbf{Unknown Project XYZ} $|$ \\emph{}}{}" in doc
         assert "\\resumeItem{bullet text}" in doc
@@ -630,6 +690,7 @@ class TestProjectsSection:
         project_links = {1: "https://example.com"}
         profile = {"section_order": ["projects"], "skills": {}, "experience": []}
         doc = assemble_resume(parsed, profile, {}, project_links)
+        assert "\\section{\\textbf{Projects}}" in doc
         assert "{\\textbf{C\\# \\& C++} $|$ \\emph{100\\% ML}}" in doc
         assert "\\resumeItem{50\\% done \\& 2\\# bugs}" in doc
 
@@ -644,7 +705,7 @@ class TestDocumentAssembly:
             projects=[ProjectEntry(index=1, name="ARVR", tech="React", bullets=["pb"])],
         )
         profile = {
-            "section_order": ["skills", "projects", "experience"],
+            "section_order": ["skills", "experience", "projects"],
             "skills": {"languages": ["Python"], "frameworks": [], "tools": [], "domains": []},
             "experience": [
                 {
@@ -658,8 +719,10 @@ class TestDocumentAssembly:
             ],
         }
         doc = assemble_resume(parsed, profile, {1: "ARVR"}, {1: "https://x"})
-        assert doc.index("\\section{\\textbf{Technical Skills}}") < doc.index("ARVR")
-        assert doc.index("ARVR") < doc.index("{Data Scientist Intern}{Mar 2024 -- Jul 2024}")
+        assert doc.index("\\section{\\textbf{Technical Skills}}") < doc.index("\\section{\\textbf{Experience}}")
+        assert doc.index("\\section{\\textbf{Experience}}") < doc.index("{Data Scientist Intern}{Mar 2024 -- Jul 2024}")
+        assert doc.index("{Data Scientist Intern}{Mar 2024 -- Jul 2024}") < doc.index("\\section{\\textbf{Projects}}")
+        assert doc.index("\\section{\\textbf{Projects}}") < doc.index("ARVR")
 
     def test_section_not_in_section_order_is_omitted(self) -> None:
         parsed = ParsedResume(
@@ -706,17 +769,20 @@ class TestGoldenFixtureEndToEnd:
         assert doc.startswith(topmatter)
         assert doc.endswith(bottommatter)
         assert doc.index("\\section{\\textbf{Education}}") < doc.index("\\section{\\textbf{Technical Skills}}")
-        assert doc.index("\\section{\\textbf{Technical Skills}}") < doc.index("Sentry")
-        assert doc.index("Sentry") < doc.index("{Data Scientist Intern}{Mar 2024 -- Jul 2024}")
-        assert doc.index("{Data Scientist Intern}{Mar 2024 -- Jul 2024}") < doc.index("\\section{Publications and Awards}")
+        assert doc.index("\\section{\\textbf{Technical Skills}}") < doc.index("\\section{\\textbf{Experience}}")
+        assert doc.index("\\section{\\textbf{Experience}}") < doc.index("{Data Scientist Intern}{Mar 2024 -- Jul 2024}")
+        assert doc.index("{Data Scientist Intern}{Mar 2024 -- Jul 2024}") < doc.index("\\section{\\textbf{Projects}}")
+        assert doc.index("\\section{\\textbf{Projects}}") < doc.index("Sentry")
+        assert doc.index("Sentry") < doc.index("\\section{Publications and Awards}")
         assert doc.index("\\section{Publications and Awards}") < doc.index("\\section{\\textbf{Campus Involvement and Leadership}}")
         assert "Certifications" not in doc
-        assert "\\section{\\textbf{Experience}}" not in doc
-        assert "\\section{\\textbf{Projects}}" not in doc
+        assert "\\section{\\textbf{Experience}}" in doc
+        assert "\\section{\\textbf{Projects}}" in doc
 
     def test_golden_experience_uses_llm_bullets_and_ignores_extra_entries(self) -> None:
         profile = build_golden_profile()
         doc = assemble_resume(PARSED_GOLDEN, profile, GOLDEN_SWEEP_HEADINGS, GOLDEN_PROJECT_LINKS)
+        assert "\\section{\\textbf{Experience}}" in doc
         assert doc.count("{Data Scientist Intern}{Mar 2024 -- Jul 2024}") == 1
         assert "AI Research Assistant" not in doc
         assert "Graduate Teaching Assistant" not in doc
@@ -739,6 +805,8 @@ class TestGoldenFixtureEndToEnd:
         ]
         positions = [doc.index(name) for name in project_names]
         assert positions == sorted(positions)
+        assert "\\section{\\textbf{Projects}}" in doc
+        assert doc.count("\n\\vspace{-2pt}\n") == 5
         assert "\n    \\resumeProjectHeading" in doc
         assert doc.count("\n    \\resumeProjectHeading") == 6
         assert "\\resumeLink{https://github.com/Aero-inc/sentry}" in doc

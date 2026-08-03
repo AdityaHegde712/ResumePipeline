@@ -7,13 +7,18 @@ from backend.resume_config import (
     bottommatter,
     education,
     escape_ampersands,
+    experience_bottom,
     experience_entry_bottom,
     experience_entry_bullet,
     experience_entry_top,
+    experience_top,
     leadership,
+    project_bottom,
     project_entry_bottom,
     project_entry_bullet,
+    project_entry_separator,
     project_entry_top,
+    projects_top,
     publications,
     skills_bottom,
     skills_bullet,
@@ -158,7 +163,7 @@ def _build_experience_section(parsed: ParsedResume, profile: dict) -> str | None
         _render_experience_entry(parsed, entry, index)
         for index, entry in enumerate(profile_entries)
     ]
-    return "".join(rendered)
+    return experience_top + "".join(rendered) + experience_bottom
 
 
 def _render_experience_entry(parsed: ParsedResume, entry: dict, index: int) -> str:
@@ -201,7 +206,7 @@ def _build_projects_section(
         _render_project_entry(project, sweep_headings, project_links)
         for project in parsed.projects
     ]
-    return "".join(rendered)
+    return projects_top + ("\n" + project_entry_separator + "\n").join(rendered) + project_bottom
 
 
 def _render_project_entry(

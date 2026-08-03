@@ -98,8 +98,8 @@ custom_sections: []
 section_order:
   - education
   - skills
-  - projects
   - experience
+  - projects
   - publications
   - leadership
   - certifications
