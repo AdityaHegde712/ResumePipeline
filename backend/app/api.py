@@ -162,7 +162,7 @@ def _app_dir_or_404(root: Path, application_id: str) -> Path:
     """Resolve an application dir or raise the locked 404 response."""
     try:
         return application_dir(root, application_id)
-    except FileNotFoundError as exc:
+    except (FileNotFoundError, ValueError) as exc:
         raise HTTPException(status_code=404, detail="Application not found") from exc
 
 

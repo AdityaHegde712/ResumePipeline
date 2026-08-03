@@ -1,11 +1,13 @@
 """Application directory storage: save tex/pdf/llm_response/request.json."""
 
 import json
+import re
 from datetime import datetime
 from pathlib import Path
 
 APPLICATION_ID_FORMAT = "%Y%m%d-%H%M%S"
 APPLICATION_ID_PREFIX = "application"
+APPLICATION_ID_PATTERN = re.compile(r"^application-\d{8}-\d{6}$")
 
 
 def generate_application_id(now: datetime | None = None) -> str:
@@ -71,8 +73,11 @@ def application_dir(root: Path, application_id: str) -> Path:
         The ``root / application_id`` directory.
 
     Raises:
+        ValueError: When ``application_id`` is not a valid application id.
         FileNotFoundError: When no such application directory exists.
     """
+    if APPLICATION_ID_PATTERN.fullmatch(application_id) is None:
+        raise ValueError(f"Invalid application id: {application_id!r}")
     app_dir = root / application_id
     if not app_dir.is_dir():
         raise FileNotFoundError(f"No application directory: {app_dir}")
