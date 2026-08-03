@@ -1,0 +1,46 @@
+# Skills
+Languages: Python, TypeScript, JavaScript
+Frameworks: React, FastAPI, PyTorch
+Developer Tools: Docker, AWS, Git
+Domains: LLM Integration, Multi-Agent Orchestration
+
+---
+
+# Experience
+## Data Scientist Intern — SUHORA Technologies
+- Built a real-time vision pipeline for maritime surveillance, processing 900+ SAR and optical satellite images.
+- Engineered a C# and Python preprocessing system with parallelized GPU usage, cutting batch inference latency from 7 minutes to under 1 minute.
+- Produced GIS-compatible GeoJSON outputs via overlap-aware postprocessing, enabling downstream geospatial ingestion.
+
+## AI Research Assistant — San Jose State University
+- Developed deep learning pipelines for medical imaging research, including MRI-based dementia detection models.
+- Co-authored peer-reviewed papers accepted at IEEE ICEPES 2024 and Springer ICETSS 2026.
+- Automated experiment tracking and evaluation harnesses, cutting manual analysis time by roughly 40%.
+
+## Graduate Teaching Assistant — SJSU AI&ML Department
+- Led weekly lab sessions and graded assignments for graduate-level artificial intelligence coursework.
+- Mentored students on PyTorch, scikit-learn, and statistical evaluation practices.
+- Designed practice problem sets covering transformers, optimization, and model evaluation.
+
+---
+
+# Projects
+## 11. Sentry | Python, FastAPI, YOLO | -
+- Built a real-time video threat detection platform with YOLO-based object detection served over FastAPI.
+- Wrote integration and unit tests covering detection pipelines and API endpoints.
+
+## 1. ARVR | React, TypeScript, Three.js, WebXR | -
+- Developed a PWA that lets users search furniture by natural language and place 3D models in their environment via WebXR.
+
+## 6. WorkoutApp | React Native, Firebase, Expo | -
+- Built a cross-platform fitness tracker with offline-first storage and progress analytics.
+
+## 13. Space Debris Research | Python, PyTorch, NumPy | -
+- Implemented orbital debris risk assessment models over satellite catalog datasets.
+
+## 4. RecSysProject | PyTorch, Pandas, Scikit-Learn | -
+- Evaluated collaborative filtering and deep ranking models on benchmark recommendation datasets.
+
+## 10. Course Visualizer | React, D3.js, FastAPI | -
+- Built an interactive learning roadmap dashboard visualizing course prerequisites and progress.
+- Shipped a FastAPI backend with cached graph queries for fast UI updates.
