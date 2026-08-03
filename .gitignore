@@ -23,6 +23,10 @@ dist/
 backend/data/applications/*
 !backend/data/applications/.gitkeep
 
+# Scratch prompt artifacts (cover-letter planning, not app code)
+backend/cover_letter_prompt.md
+backend/resume_prompt.md
+
 # IDE
 .vscode/
 .idea/
