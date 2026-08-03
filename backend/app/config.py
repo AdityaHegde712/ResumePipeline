@@ -57,7 +57,13 @@ class Settings(BaseSettings):
     backend_dir: Path = BACKEND_DIR
     model: str = "gemini/gemini-3-flash-preview"
     temperature: float = 0.2
-    pdf_compile_timeout_seconds: int = 60
+    applications_root: Path = Field(
+        default=PROJECT_ROOT / "backend" / "data" / "applications",
+        validation_alias="APPLICATIONS_ROOT",
+    )
+    pdf_compile_timeout_seconds: int = Field(
+        default=60, validation_alias="PDF_COMPILE_TIMEOUT_SECONDS"
+    )
     pdf_latex_path: Path | None = Field(
         default=None, validation_alias="PDFLATEX_PATH"
     )

@@ -106,10 +106,13 @@ def list_applications(root: Path) -> list[dict]:
 
 
 def _write_text(app_dir: Path, filename: str, content: str) -> Path:
-    """Write utf-8 text content inside the application directory."""
+    """Write utf-8 text content inside the application directory.
 
+    ``newline="\\n"`` keeps LF endings on Windows so raw-served bytes match
+    ``Path.read_text`` output (text-mode would translate to CRLF on disk).
+    """
     target = app_dir / filename
-    target.write_text(content, encoding="utf-8")
+    target.write_text(content, encoding="utf-8", newline="\n")
     return target
 
 
