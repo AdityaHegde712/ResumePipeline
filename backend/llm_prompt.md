@@ -30,6 +30,8 @@
 
 Perform the following tasks in order:
 
+Output plain text only. Do NOT wrap the response in Markdown code fences (```) and do not use bold, italics, bullet glyphs (-, *, •), or any Markdown formatting other than the # / ## section markers shown.
+
 TASK 1: REWRITE WORK EXPERIENCE
 Rewrite 3-4 bullet points for each Work Experience entry to align closely with the target Job Description keywords and requirements.
 
@@ -49,7 +51,7 @@ TASK 3: SELECT AND INFER SKILLS
 ---
 
 <output_format>
-Provide the output in clean python-parseable plaintext, following this structure:
+Provide the output in clean python-parseable plaintext, following this structure (the code fence below only illustrates the format — do NOT include fence markers in your response):
 
 ```
 # Skills
