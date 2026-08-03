@@ -19,9 +19,9 @@ node_modules/
 dist/
 *.tsbuildinfo
 
-# Data (keep .gitkeep, track applications json)
-backend/data/applications/*.json
-!data/applications/.gitkeep
+# Data (keep .gitkeep)
+backend/data/applications/*
+!backend/data/applications/.gitkeep
 
 # IDE
 .vscode/
@@ -44,6 +44,7 @@ Thumbs.db
 *.log
 tmp/
 old_code.rar
+background_syntax.txt
 
 # Agent task files (local only, not pushed to cloud)
 .agent-tasks/
@@ -60,6 +61,7 @@ docs/PROJECT_SWEEP_SUMMARIES.md
 docs/template*
 docs/*sample*
 docs/postman-testing-guide.md
+docs/vetting/
 
 # Other
 legacy_*
