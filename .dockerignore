@@ -1,0 +1,27 @@
+backend/.venv
+backend/data/applications/*
+__pycache__/
+*.pyc
+*.log
+.agent-tasks/
+docs/vetting/
+frontend/node_modules
+frontend/dist
+frontend/*.log
+*.dockerignore
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.egg-info/
+.pytest_cache/
+
+# Secrets and scratch never enter the build context
+backend/.env
+scratch/
+payload.json
+backend/cover_letter_prompt.md
+backend/resume_prompt.md
