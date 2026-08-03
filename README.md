@@ -76,6 +76,22 @@ npm run dev
 
 Opens at `http://localhost:5173`. Vite proxies `/api` requests to the backend on port 8000.
 
+### Docker
+
+Build and run both services with a single command:
+
+```bash
+docker compose up --build
+```
+
+The backend runs on port 8000 and the frontend on port 80. The application data (`backend/data/applications`) is persisted in a Docker volume.
+
+To stop the containers:
+
+```bash
+docker compose down
+```
+
 Open the page, fill in job position, company name, and job description, then submit.
 
 ## Environment Variables

@@ -1,33 +1,42 @@
 services:
   backend:
     build:
-      context: ./backend
+      context: .
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
     volumes:
-      # Mount source code for hot-reload
-      - ./backend:/app
-      # Persist .venv so it's not overwritten by host mount
-      - backend-venv:/app/.venv
+      # Mount backend source for code changes
+      - ./backend:/app/backend
+      # Persist application data (resume PDFs, tex files, metadata)
+      - applications_data:/app/backend/data/applications
+      # Mount .env file for environment variables (do NOT copy secrets into image)
+      - ./backend/.env:/app/backend/.env:ro
+      # Mount MiKTeX package cache for appuser
+      - miktex_cache:/home/appuser/.cache/miktex
+      # Sweep summaries + docs are gitignored Owner data; mount from host
+      - ./docs:/app/docs:ro
     env_file:
       - ./backend/.env
     environment:
-      - LITELLM_LOG=DEBUG
+      # Override APPLICATIONS_ROOT to match mounted volume
+      - APPLICATIONS_ROOT=/app/backend/data/applications
+      # Mount MiKTeX package cache for appuser
+      - MIKTEX_CACHE_DIR=/home/appuser/.cache/miktex
+    restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "5173:5173"
-    volumes:
-      # Mount source code for hot-reload
-      - ./frontend:/app
-      # Keep container's node_modules, ignore host node_modules
-      - /app/node_modules
+      - "80:80"
     depends_on:
       - backend
+    restart: unless-stopped
 
 volumes:
-  backend-venv:
+  applications_data:
+    driver: local
+  miktex_cache:
+    driver: local
