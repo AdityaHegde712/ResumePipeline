@@ -6,11 +6,13 @@ import yaml
 
 # Owner-authored input files, resolved against the backend / project roots.
 PROFILE_FILENAME = "profile.yaml"
-PROMPT_FILENAME = "llm_prompt.md"
+PROMPT_FILENAME = "resume_prompt.md"
+COVER_LETTER_PROMPT_FILENAME = "cover_letter_prompt.md"
+SUBJECTIVE_PROFILE_FILENAME = "subjective_profile.md"
 PROJECT_LINKS_FILENAME = "project_links.yaml"
 SWEEP_FILENAME = "PROJECT_SWEEP_SUMMARIES.md"
 
-# Prompt placeholders filled by build_prompt (must match llm_prompt.md).
+# Prompt placeholders filled by build_prompt (must match resume_prompt.md).
 _PLACEHOLDER_JOB_POSITION = "{job_position}"
 _PLACEHOLDER_COMPANY_NAME = "{company_name}"
 _PLACEHOLDER_JOB_DESCRIPTION = "{job_description}"
@@ -22,6 +24,14 @@ _PLACEHOLDER_SWEEP = "{project_sweep_file_contents}"
 # Profile skill groups rendered in this stable order in the prompt.
 _SKILL_GROUP_ORDER = ("languages", "frameworks", "tools", "domains")
 
+# Cover-letter prompt placeholders filled by build_cover_letter_prompt.
+_COVER_PLACEHOLDER_JOB_POSITION = "{job_position}"
+_COVER_PLACEHOLDER_COMPANY_NAME = "{company_name}"
+_COVER_PLACEHOLDER_JOB_DESCRIPTION = "{job_description}"
+_COVER_PLACEHOLDER_COMPANY_DESC = "{company_desc_string}"
+_COVER_PLACEHOLDER_SUBJECTIVE = "{subjective_profile}"
+_COVER_PLACEHOLDER_RESUME = "{llm_resume_response}"
+
 
 def load_profile(backend_dir: Path) -> dict:
     """Load ``backend/profile.yaml`` as a plain dict (utf-8)."""
@@ -30,9 +40,23 @@ def load_profile(backend_dir: Path) -> dict:
 
 
 def load_prompt(backend_dir: Path) -> str:
-    """Load the full ``backend/llm_prompt.md`` template text (utf-8)."""
+    """Load the full ``backend/resume_prompt.md`` template text (utf-8)."""
     prompt_path = backend_dir / PROMPT_FILENAME
     return prompt_path.read_text(encoding="utf-8")
+
+
+def load_cover_letter_prompt(backend_dir: Path) -> str:
+    """Load the full ``backend/cover_letter_prompt.md`` template (utf-8)."""
+    prompt_path = backend_dir / COVER_LETTER_PROMPT_FILENAME
+    return prompt_path.read_text(encoding="utf-8")
+
+
+def load_subjective_profile(backend_dir: Path) -> str:
+    """Load ``backend/data/subjective_profile.md`` stripped, ``""`` when absent."""
+    profile_path = backend_dir / SUBJECTIVE_PROFILE_FILENAME
+    if not profile_path.is_file():
+        return ""
+    return profile_path.read_text(encoding="utf-8").strip()
 
 
 def load_project_links(backend_dir: Path) -> dict[int, str]:
@@ -90,13 +114,13 @@ def build_prompt(
     profile: dict,
     sweep_text: str,
 ) -> str:
-    """Fill the llm_prompt.md placeholders with job and profile context.
+    """Fill the resume_prompt.md placeholders with job and profile context.
 
     ``company_desc_string`` becomes ``- COMPANY DESCRIPTION: {desc}\\n``
     when a company description is supplied, else an empty string.
 
     Args:
-        template: Raw llm_prompt.md text containing the placeholders.
+        template: Raw resume_prompt.md text containing the placeholders.
         job_position: Target job title.
         company_name: Target company name.
         job_description: Raw job description text.
@@ -120,6 +144,54 @@ def build_prompt(
         _PLACEHOLDER_SKILLS: _format_skills(profile),
         _PLACEHOLDER_EXPERIENCE: _format_experience(profile),
         _PLACEHOLDER_SWEEP: sweep_text,
+    }
+    prompt = template
+    for placeholder, value in placeholders.items():
+        prompt = prompt.replace(placeholder, value)
+    return prompt
+
+
+def build_cover_letter_prompt(
+    template: str,
+    *,
+    job_position: str,
+    company_name: str,
+    job_description: str,
+    company_description: str | None,
+    subjective_profile: str,
+    llm_resume_response: str,
+) -> str:
+    """Fill the cover_letter_prompt.md placeholders with job and resume context.
+
+    ``company_desc_string`` becomes ``- COMPANY DESCRIPTION: {desc}\\n``
+    when a company description is supplied, else an empty string, matching
+    the resume builder. Only the six cover-letter placeholders are replaced;
+    any other ``{...}`` text is preserved verbatim.
+
+    Args:
+        template: Raw cover_letter_prompt.md text containing the placeholders.
+        job_position: Target job title.
+        company_name: Target company name.
+        job_description: Raw job description text.
+        company_description: Optional one-line company description.
+        subjective_profile: Loaded subjective profile text (may be empty).
+        llm_resume_response: Raw LLM resume response text.
+
+    Returns:
+        The fully-filled cover-letter prompt, ready for a single LLM call.
+    """
+    company_desc_string = (
+        f"- COMPANY DESCRIPTION: {company_description}\n"
+        if company_description
+        else ""
+    )
+    placeholders = {
+        _COVER_PLACEHOLDER_JOB_POSITION: job_position,
+        _COVER_PLACEHOLDER_COMPANY_NAME: company_name,
+        _COVER_PLACEHOLDER_JOB_DESCRIPTION: job_description,
+        _COVER_PLACEHOLDER_COMPANY_DESC: company_desc_string,
+        _COVER_PLACEHOLDER_SUBJECTIVE: subjective_profile,
+        _COVER_PLACEHOLDER_RESUME: llm_resume_response,
     }
     prompt = template
     for placeholder, value in placeholders.items():

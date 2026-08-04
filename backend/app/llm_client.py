@@ -43,6 +43,30 @@ async def generate_resume_text(prompt: str, settings: Settings) -> str:
         LLMError: For every failure of the underlying completion call,
             categorized as authentication, rate_limit, connection, or unknown.
     """
+    return await _generate_text(prompt, settings, "Resume")
+
+
+async def generate_cover_letter_text(prompt: str, settings: Settings) -> str:
+    """Generate tailored cover-letter text with a single non-streaming call.
+
+    Uses the same settings-driven model and temperature as the resume call.
+
+    Args:
+        prompt: Fully-built cover-letter prompt (templating stays in the API).
+        settings: Runtime settings supplying the model and temperature.
+
+    Returns:
+        The generated cover-letter text verbatim.
+
+    Raises:
+        LLMError: For every failure of the underlying completion call,
+            categorized as authentication, rate_limit, connection, or unknown.
+    """
+    return await _generate_text(prompt, settings, "Cover letter")
+
+
+async def _generate_text(prompt: str, settings: Settings, phase: str) -> str:
+    """Run one non-streaming acompletion call with the locked error mapping."""
     try:
         response = await litellm.acompletion(
             model=settings.model,
@@ -52,7 +76,7 @@ async def generate_resume_text(prompt: str, settings: Settings) -> str:
         )
     except Exception as exc:
         raise LLMError(
-            message=f"Resume generation failed: {exc}",
+            message=f"{phase} generation failed: {exc}",
             category=_error_category(exc),
         ) from exc
     return response.choices[0].message.content

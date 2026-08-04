@@ -51,6 +51,26 @@ def resolve_pdf_latex_path(env_value: str | None = None) -> Path | None:
     return None
 
 
+def resolve_pandoc_path(env_value: str | None = None) -> Path | None:
+    """Resolve the pandoc executable via the PANDOC_PATH chain.
+
+    A truthy env value is used as-is (expanded); otherwise the PATH lookup
+    decides. Returns None when pandoc cannot be found anywhere.
+
+    Args:
+        env_value: Raw PANDOC_PATH value, or None to skip the env branch.
+
+    Returns:
+        Resolved Path to pandoc, or None if nothing could be resolved.
+    """
+    if env_value:
+        return Path(env_value).expanduser()
+    found = shutil.which("pandoc")
+    if found:
+        return Path(found)
+    return None
+
+
 class Settings(BaseSettings):
     """Runtime settings, loaded from environment and backend/.env."""
 
@@ -73,9 +93,21 @@ class Settings(BaseSettings):
     pdf_latex_path: Path | None = Field(
         default=None, validation_alias="PDFLATEX_PATH"
     )
+    cover_letter_export_timeout_seconds: int = Field(
+        default=60, validation_alias="COVER_LETTER_EXPORT_TIMEOUT_SECONDS"
+    )
+    pandoc_path: Path | None = Field(
+        default=None, validation_alias="PANDOC_PATH"
+    )
 
     @field_validator("pdf_latex_path", mode="before")
     @classmethod
     def normalize_pdf_latex_path(cls, raw_value: Any) -> Path | None:
         """Run the raw PDFLATEX_PATH value through the resolution chain."""
         return resolve_pdf_latex_path(raw_value)
+
+    @field_validator("pandoc_path", mode="before")
+    @classmethod
+    def normalize_pandoc_path(cls, raw_value: Any) -> Path | None:
+        """Run the raw PANDOC_PATH value through the resolution chain."""
+        return resolve_pandoc_path(raw_value)

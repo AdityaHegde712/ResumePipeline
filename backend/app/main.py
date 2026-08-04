@@ -39,6 +39,8 @@ def create_app() -> FastAPI:
         app.state.sweep_headings = loader.parse_sweep_headings(app.state.sweep_text)
         app.state.prompt_template = loader.load_prompt(settings.backend_dir)
         app.state.project_links = loader.load_project_links(settings.backend_dir)
+        app.state.cover_letter_prompt = loader.load_cover_letter_prompt(settings.backend_dir)
+        app.state.subjective_profile = loader.load_subjective_profile(settings.backend_dir)
         yield
 
     app = FastAPI(title="ResumePipeline", lifespan=lifespan)

@@ -84,7 +84,7 @@ graph LR
 | `main.py` | App factory; lifespan; CORS; `/health` endpoint |
 | `api.py` | 5 endpoints: POST/GET `/api/applications`, GET `.../llm_response`, `.../tex`, `.../pdf` |
 | `config.py` | `Settings` (pydantic-settings); `PDFLATEX_PATH` resolution chain; `applications_root` default |
-| `loader.py` | Loads `profile.yaml`, `PROJECT_SWEEP_SUMMARIES.md`, `llm_prompt.md`, `project_links.yaml`; `build_prompt()` fills 7 placeholders |
+| `loader.py` | Loads `profile.yaml`, `PROJECT_SWEEP_SUMMARIES.md`, `resume_prompt.md`, `project_links.yaml`; `build_prompt()` fills 7 placeholders |
 | `llm_client.py` | Single `litellm.acompletion` call; `LLMError` with 4 categories |
 | `parser.py` | `parse_llm_response` -> `ParsedResume(skills, experience, projects)`; `ReconstructionError` |
 | `assembler.py` | `assemble_resume()`; section_order loop; LaTeX escaping; project link resolution (exact index -> fuzzy name -> omit) |
@@ -97,7 +97,7 @@ graph LR
 |---|---|
 | `backend/resume_config.py` | LaTeX templates (topmatter, section wrappers, macros); `escape_ampersands()` |
 | `backend/profile.yaml` | Personal info, experience, skills, section_order |
-| `backend/llm_prompt.md` | Prompt template with 7 placeholders |
+| `backend/resume_prompt.md` | Prompt template with 7 placeholders |
 | `backend/project_links.yaml` | 14 entries mapping sweep index to GitHub URL |
 | `backend/data/subjective_profile.md` | Freeform profile notes (not loaded by code) |
 
@@ -161,7 +161,7 @@ The LLM is prompted to output `# Skills`, `# Experience`, `# Projects` sections 
 `assembler.py` uses a compiled regex to replace `\ { } $ % & # _ ^ ~` in one pass. Inserted escapes are never re-scanned. The `resume_config.py` templates must NOT be passed through `escape_latex()` -- they contain pre-escaped LaTeX macros.
 
 **Startup data is immutable**
-The lifespan handler loads `profile.yaml`, `PROJECT_SWEEP_SUMMARIES.md`, `llm_prompt.md`, and `project_links.yaml` once into `app.state`. Changing these files requires a server restart. There is no hot-reload for owner data.
+The lifespan handler loads `profile.yaml`, `PROJECT_SWEEP_SUMMARIES.md`, `resume_prompt.md`, and `project_links.yaml` once into `app.state`. Changing these files requires a server restart. There is no hot-reload for owner data.
 
 **application_id is regex-validated, not path-joined raw**
 `storage.py` defines `APPLICATION_ID_PATTERN = r"^application-\d{8}-\d{6}$"`. `application_dir()` raises `ValueError` if the ID does not match, and `api.py` catches `(FileNotFoundError, ValueError)` to return 404. This prevents path traversal via encoded `..` segments — a `..%2F..%2F` ID is rejected before any filesystem lookup occurs.

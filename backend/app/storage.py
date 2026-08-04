@@ -56,6 +56,35 @@ def save_llm_response(app_dir: Path, content: str) -> Path:
     return _write_text(app_dir, "llm_response.md", content)
 
 
+def save_cover_letter(app_dir: Path, text: str) -> Path:
+    """Write the cover letter as utf-8 ``cover_letter.md`` and return it."""
+
+    return _write_text(app_dir, "cover_letter.md", text)
+
+
+def save_cover_letter_pdf(app_dir: Path, pdf_bytes: bytes) -> Path:
+    """Write the exported cover-letter PDF as raw bytes and return its path."""
+
+    return _write_bytes(app_dir, "cover_letter.pdf", pdf_bytes)
+
+
+def update_request_json(app_dir: Path, updates: dict) -> Path:
+    """Merge ``updates`` into ``request.json`` without clobbering other keys.
+
+    Existing keys stay intact; keys present in ``updates`` override their
+    prior values. Returns the ``request.json`` Path.
+
+    Raises:
+        FileNotFoundError: When the app dir or ``request.json`` is missing.
+    """
+    request_file = app_dir / "request.json"
+    if not request_file.is_file():
+        raise FileNotFoundError(f"Missing request.json: {request_file}")
+    metadata = json.loads(request_file.read_text(encoding="utf-8"))
+    metadata.update(updates)
+    return _write_text(app_dir, "request.json", json.dumps(metadata, ensure_ascii=False))
+
+
 def save_request_json(app_dir: Path, metadata: dict) -> Path:
     """Serialize the metadata dict to ``request.json`` and return its path."""
 

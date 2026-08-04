@@ -23,7 +23,7 @@ tests/
 **Generation flow:**
 
 1. Frontend sends form data to `POST /api/applications`
-2. Backend fills `llm_prompt.md` placeholders with job and profile context
+2. Backend fills `resume_prompt.md` placeholders with job and profile context
 3. One LiteLLM call to Gemini produces raw plaintext
 4. Parser splits into skills, experience, projects
 5. Assembler renders LaTeX per `section_order` with link resolution
@@ -65,7 +65,7 @@ npm install
 uv run uvicorn backend.app.main:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
-The server loads `profile.yaml`, `PROJECT_SWEEP_SUMMARIES.md`, and `llm_prompt.md` at startup. On Windows, run from a non-elevated shell so MiKTeX can install packages automatically (known quirk with elevated terminals).
+The server loads `profile.yaml`, `PROJECT_SWEEP_SUMMARIES.md`, and `resume_prompt.md` at startup. On Windows, run from a non-elevated shell so MiKTeX can install packages automatically (known quirk with elevated terminals).
 
 ### Frontend
 
@@ -160,7 +160,7 @@ backend/
   app/
     main.py          FastAPI app factory; lifespan loads profile/sweep/prompt; CORS
     config.py        Settings from env and .env; PDFLATEX_PATH resolution
-    loader.py        Startup reads: profile.yaml, sweep summaries, llm_prompt.md
+    loader.py        Startup reads: profile.yaml, sweep summaries, resume_prompt.md
     llm_client.py    Single LiteLLM call with typed error mapping
     parser.py        Deterministic parse of LLM response into structured data
     assembler.py     LaTeX assembly per section_order with link resolution
@@ -168,7 +168,7 @@ backend/
     storage.py       Application directory management and file persistence
     api.py           5 endpoints under /api
   resume_config.py   LaTeX templates and static sections
-  llm_prompt.md      Prompt template with placeholders
+  resume_prompt.md      Prompt template with placeholders
   project_links.yaml Index-keyed URL map (sweep index to GitHub URL)
   profile.yaml       User profile data
 frontend/            React + Vite + TypeScript (Mantine dark theme)
