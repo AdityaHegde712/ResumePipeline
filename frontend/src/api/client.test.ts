@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   ApplicationApiError,
+  CoverLetterConflictError,
   createApplication,
+  generateCoverLetter,
+  getCoverLetterPdfUrl,
+  getCoverLetterText,
+  getCoverLetterUrl,
   getDownloadUrl,
   getLlmsResponse,
 } from './client'
@@ -151,5 +156,196 @@ describe('getDownloadUrl', () => {
 
   it('encodes application ids', () => {
     expect(getDownloadUrl('application/1', 'tex')).toBe('/api/applications/application%2F1/tex')
+  })
+})
+
+describe('createApplication cover letter body and response', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('sends generate_cover_letter when provided', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      okResponse({
+        status: 200,
+        llm_generation: 'OK',
+        reconstruction: 'OK',
+        saved: 'OK',
+        pdf_error: null,
+        application_id: 'application-20260803-010000',
+        cover_letter: 'OK',
+        cover_letter_generated: true,
+        cover_letter_error: null,
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await createApplication({ ...BASIC_BODY, generate_cover_letter: true })
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(init.body).toBe(JSON.stringify({ ...BASIC_BODY, generate_cover_letter: true }))
+  })
+
+  it('parses cover letter fields from a successful response', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        okResponse({
+          status: 200,
+          llm_generation: 'OK',
+          reconstruction: 'OK',
+          saved: 'OK',
+          pdf_error: null,
+          application_id: 'application-20260803-010000',
+          cover_letter: 'ERROR',
+          cover_letter_generated: false,
+          cover_letter_error: 'LLM auth failed',
+        }),
+      ),
+    )
+
+    const result = await createApplication(BASIC_BODY)
+
+    expect(result.cover_letter).toBe('ERROR')
+    expect(result.cover_letter_generated).toBe(false)
+    expect(result.cover_letter_error).toBe('LLM auth failed')
+  })
+
+  it('keeps cover letter fields null when generation was not requested', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        okResponse({
+          status: 200,
+          llm_generation: 'OK',
+          reconstruction: 'OK',
+          saved: 'OK',
+          pdf_error: null,
+          application_id: 'application-20260803-010000',
+          cover_letter: null,
+          cover_letter_generated: false,
+          cover_letter_error: null,
+        }),
+      ),
+    )
+
+    const result = await createApplication(BASIC_BODY)
+
+    expect(result.cover_letter).toBeNull()
+    expect(result.cover_letter_generated).toBe(false)
+    expect(result.cover_letter_error).toBeNull()
+  })
+})
+
+describe('generateCoverLetter', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('POSTs the late endpoint and returns the generated letter', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      okResponse({
+        cover_letter: 'OK',
+        cover_letter_generated: true,
+        cover_letter_text: 'Dear Hiring Manager, ...',
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await generateCoverLetter('application-20260803-010000')
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/applications/application-20260803-010000/cover_letter', {
+      method: 'POST',
+    })
+    expect(result.cover_letter).toBe('OK')
+    expect(result.cover_letter_generated).toBe(true)
+    expect(result.cover_letter_text).toBe('Dear Hiring Manager, ...')
+  })
+
+  it('throws CoverLetterConflictError on 409', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(okResponse({ detail: 'cover_letter.md already exists' }, 409)),
+    )
+
+    const error = await generateCoverLetter('application-1').catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(CoverLetterConflictError)
+  })
+
+  it('throws a plain error on other failures', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(okResponse({ detail: 'boom' }, 500)),
+    )
+
+    await expect(generateCoverLetter('application-1')).rejects.toThrow(
+      'Failed to generate cover letter (500)',
+    )
+  })
+
+  it('encodes application ids in the request url', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      okResponse({ cover_letter: 'OK', cover_letter_generated: true, cover_letter_text: 'x' }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await generateCoverLetter('application/1')
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/applications/application%2F1/cover_letter', {
+      method: 'POST',
+    })
+  })
+})
+
+describe('getCoverLetterText', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('returns the raw letter text', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        text: async () => 'Dear Hiring Manager,\n\n...',
+      } as MockResponse),
+    )
+
+    const text = await getCoverLetterText('application-20260803-010000')
+
+    expect(text).toBe('Dear Hiring Manager,\n\n...')
+  })
+
+  it('throws when the letter file is missing', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 404, text: async () => '' } as MockResponse),
+    )
+
+    await expect(getCoverLetterText('application-missing')).rejects.toThrow(
+      'Failed to load cover letter (404)',
+    )
+  })
+})
+
+describe('getCoverLetterUrl and getCoverLetterPdfUrl', () => {
+  it('builds text and pdf cover letter urls', () => {
+    expect(getCoverLetterUrl('application-1')).toBe(
+      '/api/applications/application-1/cover_letter',
+    )
+    expect(getCoverLetterPdfUrl('application-1')).toBe(
+      '/api/applications/application-1/cover_letter/pdf',
+    )
+  })
+
+  it('encodes application ids', () => {
+    expect(getCoverLetterUrl('application/1')).toBe(
+      '/api/applications/application%2F1/cover_letter',
+    )
+    expect(getCoverLetterPdfUrl('application/1')).toBe(
+      '/api/applications/application%2F1/cover_letter/pdf',
+    )
   })
 })

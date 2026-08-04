@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import {
   Button,
+  Checkbox,
   Container,
   Divider,
   Group,
@@ -13,10 +14,14 @@ import {
 import {
   ApplicationApiError,
   type ApplicationResponse,
+  CoverLetterConflictError,
   createApplication,
   type FatalPhaseError,
+  generateCoverLetter,
+  getCoverLetterText,
   getLlmsResponse,
 } from './api/client'
+import { CoverLetterSection } from './components/CoverLetterSection'
 import { ExportMenu } from './components/ExportMenu'
 import { PhaseChips } from './components/PhaseChips'
 
@@ -41,6 +46,10 @@ export default function App() {
   const [fatal, setFatal] = useState<FatalPhaseError | null>(null)
   const [llmText, setLlmText] = useState<string | null>(null)
   const [llmError, setLlmError] = useState<string | null>(null)
+  const [generateCoverLetterOn, setGenerateCoverLetterOn] = useState(true)
+  const [coverLetterText, setCoverLetterText] = useState<string | null>(null)
+  const [coverLetterAlert, setCoverLetterAlert] = useState<string | null>(null)
+  const [generatingLetter, setGeneratingLetter] = useState(false)
 
   const canSubmit =
     values.job_position.trim() !== '' &&
@@ -57,18 +66,31 @@ export default function App() {
     setResponse(null)
     setLlmText(null)
     setLlmError(null)
+    setCoverLetterText(null)
+    setCoverLetterAlert(null)
     try {
       const result = await createApplication({
         job_position: values.job_position.trim(),
         company_name: values.company_name.trim(),
         company_description: values.company_description.trim() || null,
         job_description: values.job_description.trim(),
+        generate_cover_letter: generateCoverLetterOn,
       })
       setResponse(result)
       try {
         setLlmText(await getLlmsResponse(result.application_id))
       } catch {
         setLlmError('Could not load the LLM response.')
+      }
+      if (result.cover_letter_generated) {
+        try {
+          setCoverLetterText(await getCoverLetterText(result.application_id))
+        } catch {
+          setCoverLetterText('')
+          setCoverLetterAlert('The cover letter was generated but its text could not be loaded.')
+        }
+      } else if (result.cover_letter === 'ERROR' && result.cover_letter_error) {
+        setCoverLetterAlert(`Cover letter generation failed: ${result.cover_letter_error}`)
       }
     } catch (error) {
       if (error instanceof ApplicationApiError) {
@@ -80,6 +102,34 @@ export default function App() {
       setSubmitting(false)
     }
   }
+
+  async function handleGenerateLetter(): Promise<void> {
+    if (response === null) {
+      return
+    }
+    setGeneratingLetter(true)
+    setCoverLetterAlert(null)
+    try {
+      const result = await generateCoverLetter(response.application_id)
+      setCoverLetterText(result.cover_letter_text ?? '')
+    } catch (error) {
+      if (error instanceof CoverLetterConflictError) {
+        setCoverLetterAlert('Cover letter already generated.')
+        try {
+          setCoverLetterText(await getCoverLetterText(response.application_id))
+        } catch {
+          // Letter exists but its text is unavailable; keep the alert visible.
+        }
+      } else {
+        setCoverLetterAlert('Cover letter generation failed. Please try again.')
+      }
+    } finally {
+      setGeneratingLetter(false)
+    }
+  }
+
+  const showLetterSection =
+    coverLetterText !== null || (response !== null && !response.cover_letter_generated)
 
   return (
     <Container size="sm" px="lg" py="xl">
@@ -118,6 +168,12 @@ export default function App() {
           autosize
           value={values.job_description}
           onChange={(event) => setField('job_description', event.currentTarget.value)}
+        />
+        <Checkbox
+          label="Generate cover letter"
+          checked={generateCoverLetterOn}
+          onChange={(event) => setGenerateCoverLetterOn(event.currentTarget.checked)}
+          mt="md"
         />
         <Button onClick={handleSubmit} loading={submitting} disabled={!canSubmit} radius={0} fullWidth mt="md">
           Generate resume
@@ -163,6 +219,19 @@ export default function App() {
         <Text size="sm" c="dark.3">
           The raw LLM response appears here after a successful run.
         </Text>
+      )}
+
+      <Divider my="xl" color="dark.6" />
+
+      {showLetterSection && response && (
+        <CoverLetterSection
+          applicationId={response.application_id}
+          text={coverLetterText}
+          alert={coverLetterAlert}
+          generating={generatingLetter}
+          showGenerate={!response.cover_letter_generated}
+          onGenerate={handleGenerateLetter}
+        />
       )}
 
       <Divider my="xl" color="dark.6" />
