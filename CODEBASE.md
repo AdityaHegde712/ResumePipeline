@@ -1,6 +1,6 @@
 # Codebase Overview
 
-> Full-stack resume generation pipeline: accepts a job description, calls an LLM to tailor resume content, deterministically reconstructs a LaTeX document from the output, and compiles it to PDF.
+> Full-stack resume generation pipeline: accepts a job description, calls an LLM to tailor resume content, deterministically reconstructs a LaTeX document from the output, and compiles it to PDF. Optionally generates a cover letter via a second LLM call and exports it to PDF via pandoc.
 
 **Last updated:** 2026-08-03
 **Primary language:** Python 3.12 (backend) / TypeScript (frontend)
@@ -12,7 +12,7 @@
 
 The system has two runtimes connected by a reverse proxy. In development, Vite's dev server proxies `/api` to the backend on `:8000`. In Docker, nginx proxies `/api/` to `backend:8000` (without prefix stripping — the backend mounts its own `/api` prefix).
 
-The React frontend collects job details and calls five FastAPI endpoints. The backend loads profile and project data once at startup, builds a prompt, makes a single non-streaming LLM call, parses the LLM's structured plaintext response, assembles a LaTeX document from the parsed data and hardcoded templates, then optionally compiles it to PDF via pdflatex.
+The React frontend collects job details and calls eight FastAPI endpoints. The backend loads profile and project data once at startup, builds a prompt, makes a single non-streaming LLM call, parses the LLM's structured plaintext response, assembles a LaTeX document from the parsed data and hardcoded templates, then optionally compiles it to PDF via pdflatex. An optional second LLM call generates a cover letter, which can be exported to PDF via pandoc.
 
 State lives entirely on the filesystem. Each generated application gets a timestamped directory under `backend/data/applications/` containing four artifacts: `llm_response.md`, `request.json`, `resume.tex`, and (on success) `resume.pdf`. There is no database, cache, or message queue.
 
@@ -34,6 +34,12 @@ graph LR
 │  frontend (nginx:alpine)  ──/api/──>  backend    │
 │       :80                           :8000        │
 │                                                  │
+│  Backend image installs: MiKTeX + pandoc (apt)   │
+│  Env overrides:                                  │
+│    PANDOC_PATH=${PANDOC_PATH:-}  (host passthrough)
+│    PDFLATEX_PATH=  (empty; prevents host path leak)
+│    PDF_COMPILE_TIMEOUT_SECONDS=300 (MiKTeX first-run)
+│                                                  │
 │  Volumes:                                        │
 │    applications_data  →  /app/backend/data/apps  │
 │    miktex_cache       →  /home/appuser/.cache/…  │
@@ -54,6 +60,7 @@ graph LR
 | Testing (backend) | pytest + pytest-asyncio | `tests/spec/` (frozen), `tests/integration/` (mutable) |
 | Testing (frontend) | vitest 4 | `frontend/src/api/client.test.ts` |
 | PDF compilation | pdflatex (MiKTeX) | Two-pass compile; 60s per-pass timeout; runs in `asyncio.to_thread` |
+| Cover-letter PDF export | pandoc + pdflatex engine | Lazy export of `cover_letter.md` → `cover_letter.pdf`; optional `cover_letter_template.tex`; configurable timeout |
 | Container (backend) | Docker — python:3.12-slim-bookworm | MiKTeX official apt repo; non-root `appuser`; healthcheck on `/health` |
 | Container (frontend) | Docker — multi-stage: node:20-alpine → nginx:alpine | SPA root; `/api/` reverse proxy to `backend:8000` |
 | Orchestration | Docker Compose | Two services, two named volumes (`applications_data`, `miktex_cache`); `.env` mounted read-only |
@@ -71,7 +78,7 @@ graph LR
 | Start scripts | `./scripts/start-all.sh` | Runs backend (background) + frontend (foreground); traps INT/EXIT to kill backend |
 | Docker (production) | `docker compose up --build` | Builds both images, starts backend (:8000) + frontend (:80) |
 
-`backend/app/main.py` defines `create_app()` (no-arg factory). Lifespan loads five items into `app.state`: `settings`, `profile`, `sweep_text`, `sweep_headings`, `prompt_template`, `project_links`. CORS is hardcoded to `localhost:5173` and `127.0.0.1:5173`.
+`backend/app/main.py` defines `create_app()` (no-arg factory). Lifespan loads seven items into `app.state`: `settings`, `profile`, `sweep_text`, `sweep_headings`, `prompt_template`, `project_links`, `cover_letter_prompt`, `subjective_profile`. CORS is hardcoded to `localhost:5173` and `127.0.0.1:5173`.
 
 ---
 
@@ -82,14 +89,15 @@ graph LR
 | Path | Responsibility |
 |---|---|
 | `main.py` | App factory; lifespan; CORS; `/health` endpoint |
-| `api.py` | 5 endpoints: POST/GET `/api/applications`, GET `.../llm_response`, `.../tex`, `.../pdf` |
-| `config.py` | `Settings` (pydantic-settings); `PDFLATEX_PATH` resolution chain; `applications_root` default |
-| `loader.py` | Loads `profile.yaml`, `PROJECT_SWEEP_SUMMARIES.md`, `resume_prompt.md`, `project_links.yaml`; `build_prompt()` fills 7 placeholders |
-| `llm_client.py` | Single `litellm.acompletion` call; `LLMError` with 4 categories |
+| `api.py` | 8 endpoints: POST/GET `/api/applications`, GET `.../llm_response`, `.../tex`, `.../pdf`, POST/GET `.../cover_letter`, GET `.../cover_letter/pdf` |
+| `config.py` | `Settings` (pydantic-settings); `PDFLATEX_PATH` and `PANDOC_PATH` resolution chains; `applications_root` default |
+| `loader.py` | Loads `profile.yaml`, `PROJECT_SWEEP_SUMMARIES.md`, `resume_prompt.md`, `cover_letter_prompt.md`, `subjective_profile.md`, `project_links.yaml`; `build_prompt()` fills 7 placeholders; `build_cover_letter_prompt()` fills 6 placeholders |
+| `llm_client.py` | `generate_resume_text()` and `generate_cover_letter_text()` via `litellm.acompletion`; `LLMError` with 4 categories |
 | `parser.py` | `parse_llm_response` -> `ParsedResume(skills, experience, projects)`; `ReconstructionError` |
 | `assembler.py` | `assemble_resume()`; section_order loop; LaTeX escaping; project link resolution (exact index -> fuzzy name -> omit) |
-| `storage.py` | Application dirs `application-YYYYMMDD-HHMMSS`; save tex/pdf/llm_response/request_json; list desc |
+| `storage.py` | Application dirs `application-YYYYMMDD-HHMMSS`; save tex/pdf/llm_response/request_json/cover_letter; `save_cover_letter()`; list desc |
 | `pdf.py` | `compile_resume()`; two-pass pdflatex; timeout; cleanup; `PDFCompileError` |
+| `cover_letter_pdf.py` | `export_cover_letter_pdf()`; pandoc subprocess; optional `cover_letter_template.tex`; `CoverLetterExportError` |
 
 ### Data / Owner files (read-only, not code)
 
@@ -98,8 +106,9 @@ graph LR
 | `backend/resume_config.py` | LaTeX templates (topmatter, section wrappers, macros); `escape_ampersands()` |
 | `backend/profile.yaml` | Personal info, experience, skills, section_order |
 | `backend/resume_prompt.md` | Prompt template with 7 placeholders |
+| `backend/cover_letter_prompt.md` | Cover-letter prompt template with 6 placeholders (gitignored) |
 | `backend/project_links.yaml` | 14 entries mapping sweep index to GitHub URL |
-| `backend/data/subjective_profile.md` | Freeform profile notes (not loaded by code) |
+| `backend/data/subjective_profile.md` | Freeform profile notes used in cover-letter generation (gitignored; returns `""` when absent) |
 
 ### Frontend (`frontend/src/`)
 
@@ -108,9 +117,10 @@ graph LR
 | `App.tsx` | Main form + results view; single-page layout |
 | `main.tsx` | MantineProvider with dark theme |
 | `theme.ts` | Dark palette (#121212 body, #e0e0e0 text); accent blue-gray; no shadows; radius 0 |
-| `api/client.ts` | Typed fetch wrapper; `ApplicationApiError` class; `createApplication`, `getLlmsResponse`, `getDownloadUrl` |
+| `api/client.ts` | Typed fetch wrapper; `ApplicationApiError`, `CoverLetterConflictError`; `createApplication`, `getLlmsResponse`, `generateCoverLetter`, `getCoverLetterText`, `getDownloadUrl`, `getCoverLetterPdfUrl` |
 | `components/PhaseChips.tsx` | Phase status indicators: llm_generation, reconstruction, saved, pdf_error |
 | `components/ExportMenu.tsx` | Dropdown menu for .tex and .pdf downloads |
+| `components/CoverLetterSection.tsx` | Cover-letter UI: readonly textarea, Copy, Export PDF, late "Generate cover letter" button |
 
 ### Tests
 
@@ -134,7 +144,7 @@ graph LR
 | `scripts/start-backend.sh` | Starts backend via `uv run uvicorn`; logs to `.logs/backend.log` |
 | `scripts/start-frontend.sh` | Starts frontend dev server (`npm run dev`) |
 | `scripts/start-all.sh` | Runs backend in background, frontend in foreground; traps signals to clean up backend on exit |
-| `Dockerfile` | Backend image: python:3.12-slim-bookworm + MiKTeX apt repo; non-root `appuser`; healthcheck |
+| `Dockerfile` | Backend image: python:3.12-slim-bookworm + MiKTeX + pandoc apt repos; non-root `appuser`; healthcheck |
 | `frontend/Dockerfile` | Multi-stage: node:20-alpine build → nginx:alpine serve |
 | `frontend/nginx.conf` | SPA root (`try_files $uri /index.html`); `/api/` reverse proxy to `backend:8000` (no prefix strip) |
 | `docker-compose.yml` | Two services; `applications_data` and `miktex_cache` named volumes; `.env` mounted read-only; `docs/` mounted read-only |
@@ -161,7 +171,7 @@ The LLM is prompted to output `# Skills`, `# Experience`, `# Projects` sections 
 `assembler.py` uses a compiled regex to replace `\ { } $ % & # _ ^ ~` in one pass. Inserted escapes are never re-scanned. The `resume_config.py` templates must NOT be passed through `escape_latex()` -- they contain pre-escaped LaTeX macros.
 
 **Startup data is immutable**
-The lifespan handler loads `profile.yaml`, `PROJECT_SWEEP_SUMMARIES.md`, `resume_prompt.md`, and `project_links.yaml` once into `app.state`. Changing these files requires a server restart. There is no hot-reload for owner data.
+The lifespan handler loads `profile.yaml`, `PROJECT_SWEEP_SUMMARIES.md`, `resume_prompt.md`, `cover_letter_prompt.md`, `subjective_profile.md`, and `project_links.yaml` once into `app.state`. Changing these files requires a server restart. There is no hot-reload for owner data.
 
 **application_id is regex-validated, not path-joined raw**
 `storage.py` defines `APPLICATION_ID_PATTERN = r"^application-\d{8}-\d{6}$"`. `application_dir()` raises `ValueError` if the ID does not match, and `api.py` catches `(FileNotFoundError, ValueError)` to return 404. This prevents path traversal via encoded `..` segments — a `..%2F..%2F` ID is rejected before any filesystem lookup occurs.
@@ -182,7 +192,7 @@ uv sync
 
 # 2. Backend environment
 cp backend/.env.example backend/.env
-# Edit backend/.env: set GEMINI_API_KEY and PDFLATEX_PATH
+# Edit backend/.env: set GEMINI_API_KEY, PDFLATEX_PATH, optionally PANDOC_PATH
 
 # 3. Run backend
 uvicorn backend.app.main:app --reload --port 8000
@@ -207,9 +217,9 @@ docker compose up --build  # builds both images, starts on :8000 and :80
 docker compose down        # stop and remove containers
 ```
 
-Environment variables: copy `backend/.env.example` to `backend/.env`. The critical vars are `GEMINI_API_KEY` (required for LLM calls) and `PDFLATEX_PATH` (required for PDF compilation; if unset, the system falls back to MiKTeX default path, then `shutil.which("pdflatex")`).
+Environment variables: copy `backend/.env.example` to `backend/.env`. The critical vars are `GEMINI_API_KEY` (required for LLM calls) and `PDFLATEX_PATH` (required for PDF compilation; if unset, the system falls back to MiKTeX default path, then `shutil.which("pdflatex")`). For cover-letter PDF export, set `PANDOC_PATH` or have pandoc on PATH; tune timeout via `COVER_LETTER_EXPORT_TIMEOUT_SECONDS` (default 60s).
 
-In Docker, `.env` is mounted read-only. `APPLICATIONS_ROOT` is overridden to `/app/backend/data/applications` to match the named volume mount. `MIKTEX_CACHE_DIR` is set to `/home/appuser/.cache/miktex` to persist the MiKTeX package cache across container restarts.
+In Docker, `.env` is mounted read-only. `APPLICATIONS_ROOT` is overridden to `/app/backend/data/applications` to match the named volume mount. `MIKTEX_CACHE_DIR` is set to `/home/appuser/.cache/miktex` to persist the MiKTeX package cache across container restarts. `PDFLATEX_PATH=` is set to empty to prevent the host Windows path from leaking into the Linux container. `PANDOC_PATH` is passed through from the host when set. `PDF_COMPILE_TIMEOUT_SECONDS=300` gives headroom for first-run MiKTeX package auto-install.
 
 ---
 
@@ -236,6 +246,8 @@ Dev CORS is hardcoded to Vite's defaults in `main.py`. Production deployment wou
 - `backend/resume_config.py` templates contain pre-escaped LaTeX. Never pass them through `escape_latex()`.
 - `tests/spec/` tests are frozen -- they encode the expected contract. If the parser or assembler behavior changes, the spec tests must be updated to match, not the other way around.
 - The `PDFLATEX_PATH` resolution chain: env value -> MiKTeX default -> `shutil.which("pdflatex")` -> None. Tests can override this by setting the env var before `Settings()` construction.
+- The `PANDOC_PATH` resolution chain: env value -> `shutil.which("pandoc")` -> None. Used only for cover-letter PDF export; if pandoc is missing, `GET .../cover_letter/pdf` returns 500 with `CoverLetterExportError`.
+- Cover-letter LLM failure is non-fatal: `POST /api/applications` always returns 200 even when the cover-letter call fails; the error is stored as `cover_letter_error` in the response and `request.json`.
 - `backend/data/applications/` is gitignored (only `.gitkeep` is tracked). Generated resumes are local-only.
 - `APPLICATION_ID_PATTERN` in `storage.py` must stay in sync with the test data in `test_security.py`. Changing the ID format requires updating both the pattern regex and the security test parametrization.
 - The backend Dockerfile runs `uv sync --frozen` -- this requires `uv.lock` to be committed. Never delete or regenerate `uv.lock` without testing the Docker build.

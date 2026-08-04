@@ -1,6 +1,6 @@
 # ResumePipeline v2
 
-A locally-run full-stack application that generates a tailored LaTeX resume from your `profile.yaml`, project sweep summaries, and an LLM prompt template. A single Gemini API call produces the resume content, which is deterministically parsed, assembled into LaTeX per your `section_order`, and compiled to PDF via MiKTeX. Cover letter generation is out of scope for v2.
+A locally-run full-stack application that generates a tailored LaTeX resume and cover letter from your `profile.yaml`, project sweep summaries, and LLM prompt templates. A single Gemini API call produces the resume content, which is deterministically parsed, assembled into LaTeX per your `section_order`, and compiled to PDF via MiKTeX. An optional second LLM call generates a cover letter, which can be exported to PDF via pandoc.
 
 ## Features
 
@@ -9,6 +9,21 @@ A locally-run full-stack application that generates a tailored LaTeX resume from
 - Dark minimal UI: Mantine-based React frontend with a flat, modern design
 - Non-fatal PDF flag: PDF compilation failure saves the `.tex` source and flags the error without losing work
 - Application history: every generation is persisted on disk with full metadata
+- Cover letter generation (v2.1): optional second LLM call with dedicated prompt; export to PDF via pandoc
+
+## Cover letter (v2.1)
+
+The cover letter feature generates a tailored letter using a second LLM call with a dedicated prompt template (`cover_letter_prompt.md`). The generation is non-fatal: if the cover letter LLM call fails, the resume generation still completes and the error is flagged in the response.
+
+**Flow:**
+1. During resume generation, an optional second LLM call produces cover letter text
+2. The letter is saved as `cover_letter.md` in the application directory
+3. The letter can be exported to PDF on-demand via pandoc with pdflatex engine
+4. Late generation is available via `POST /api/applications/{id}/cover_letter` (409 if letter already exists)
+
+**New environment variables:**
+- `PANDOC_PATH` — path to pandoc executable (optional; falls back to PATH lookup)
+- `COVER_LETTER_EXPORT_TIMEOUT_SECONDS` — timeout for pandoc export (default: 60)
 
 ## Architecture
 
@@ -106,6 +121,8 @@ Open the page, fill in job position, company name, and job description, then sub
 | `DATA_DIR` | Application data storage root | `./data` |
 | `CORS_ORIGINS` | Allowed CORS origins | `http://localhost:5173` |
 | `PDFLATEX_PATH` | Full path to `pdflatex.exe`; leave empty to disable PDF | (empty) |
+| `PANDOC_PATH` | Path to pandoc executable; leave empty for PATH lookup | (empty) |
+| `COVER_LETTER_EXPORT_TIMEOUT_SECONDS` | Timeout for pandoc cover-letter export | `60` |
 
 ## API
 
@@ -113,11 +130,14 @@ All endpoints are under `/api`.
 
 | Method | Path | Purpose | Response |
 |---|---|---|---|
-| `POST` | `/api/applications` | Generate a tailored resume | `{status, llm_generation, reconstruction, saved, pdf_error?, application_id}` |
+| `POST` | `/api/applications` | Generate a tailored resume (and optional cover letter) | `{status, llm_generation, reconstruction, saved, pdf_error?, application_id, cover_letter, cover_letter_generated, cover_letter_error}` |
 | `GET` | `/api/applications` | List all past applications (newest first) | `[{application_id, job_position, company_name, ...}]` |
 | `GET` | `/api/applications/{id}/llm_response` | Serve raw LLM response text | Plain text |
 | `GET` | `/api/applications/{id}/tex` | Download `resume.tex` as attachment | File download |
 | `GET` | `/api/applications/{id}/pdf` | Download `resume.pdf` as attachment (404 if compile failed) | File download |
+| `POST` | `/api/applications/{id}/cover_letter` | Generate cover letter for existing application (409 if exists) | `{cover_letter, cover_letter_generated, cover_letter_text}` |
+| `GET` | `/api/applications/{id}/cover_letter` | Serve cover letter text (404 if missing) | Plain text |
+| `GET` | `/api/applications/{id}/cover_letter/pdf` | Export cover letter to PDF (lazy pandoc→pdflatex) | File download |
 
 A `GET /health` endpoint returns `{"status": "ok"}`.
 
@@ -158,20 +178,30 @@ npm run test
 ```
 backend/
   app/
-    main.py          FastAPI app factory; lifespan loads profile/sweep/prompt; CORS
-    config.py        Settings from env and .env; PDFLATEX_PATH resolution
-    loader.py        Startup reads: profile.yaml, sweep summaries, resume_prompt.md
-    llm_client.py    Single LiteLLM call with typed error mapping
-    parser.py        Deterministic parse of LLM response into structured data
-    assembler.py     LaTeX assembly per section_order with link resolution
-    pdf.py           pdflatex subprocess (2 passes, timeout, cleanup)
-    storage.py       Application directory management and file persistence
-    api.py           5 endpoints under /api
-  resume_config.py   LaTeX templates and static sections
-  resume_prompt.md      Prompt template with placeholders
-  project_links.yaml Index-keyed URL map (sweep index to GitHub URL)
-  profile.yaml       User profile data
-frontend/            React + Vite + TypeScript (Mantine dark theme)
+    main.py              FastAPI app factory; lifespan loads profile/sweep/prompt; CORS
+    config.py            Settings from env and .env; PDFLATEX_PATH/PANDOC_PATH resolution
+    loader.py            Startup reads: profile.yaml, sweep summaries, resume_prompt.md, cover_letter_prompt.md, subjective_profile.md
+    llm_client.py        Single LiteLLM call with typed error mapping; generate_resume_text, generate_cover_letter_text
+    parser.py            Deterministic parse of LLM response into structured data
+    assembler.py         LaTeX assembly per section_order with link resolution
+    pdf.py               pdflatex subprocess (2 passes, timeout, cleanup)
+    cover_letter_pdf.py  pandoc export of cover_letter.md to PDF (optional template)
+    storage.py           Application directory management and file persistence; save_cover_letter
+    api.py               8 endpoints under /api (including cover-letter endpoints)
+  resume_config.py       LaTeX templates and static sections
+  resume_prompt.md       Prompt template with placeholders
+  cover_letter_prompt.md Cover-letter prompt template (gitignored)
+  project_links.yaml     Index-keyed URL map (sweep index to GitHub URL)
+  profile.yaml           User profile data
+  data/
+    subjective_profile.md  Freeform profile notes (gitignored)
+frontend/
+  src/
+    components/
+      CoverLetterSection.tsx  Cover-letter UI: textarea, copy, export PDF, late generate
+    api/
+      client.ts              Typed fetch wrapper; cover-letter client functions
+  React + Vite + TypeScript (Mantine dark theme)
 tests/
   spec/              Frozen tests: parser, assembler, storage, config
   integration/       Mutable tests: API, PDF (mocked LLM)
@@ -180,7 +210,7 @@ tests/
 
 ## Notes and Limitations
 
-- **Cover letter**: Deferred to a future version; will follow the same application directory pattern
+- **Cover letter**: Optional second LLM call; non-fatal on failure; export to PDF via pandoc (requires `PANDOC_PATH` or pandoc on PATH)
 - **PDF compilation**: Non-fatal; `.tex` source is always saved. Set `PDFLATEX_PATH` or have MiKTeX on PATH for PDF output
 - **Windows elevated shell**: MiKTeX cannot auto-install packages when running from an elevated terminal; use a normal shell
 - **LLM provider**: v2 targets Gemini via LiteLLM; no local fallback
