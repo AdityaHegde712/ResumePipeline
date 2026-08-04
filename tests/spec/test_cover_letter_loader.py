@@ -85,7 +85,7 @@ def build_cover_letter(
     *,
     company_description: str | None = "AI startup",
     subjective_profile: str = "I value craft.",
-    llm_resume_response: str = "# Skills\nPython",
+    llm_resume_response: str = "# Skills\npython",
 ) -> str:
     """Call ``build_cover_letter_prompt`` with representative defaults."""
 
