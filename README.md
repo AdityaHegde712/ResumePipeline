@@ -114,7 +114,6 @@ Open the page, fill in job position, company name, and job description, then sub
 | Variable | Description | Default |
 |---|---|---|
 | `GEMINI_API_KEY` | API key for Gemini via LiteLLM | (required) |
-| `GROQ_API_KEY` | API key for Groq (unused in v2) | (empty) |
 | `LLM_DEFAULT_MODEL` | LiteLLM model identifier | `gemini/gemini-3-flash-preview` |
 | `LLM_DEFAULT_TEMPERATURE` | Sampling temperature | `0.3` |
 | `LLM_MAX_TOKENS` | Max output tokens per LLM call | `4096` |
