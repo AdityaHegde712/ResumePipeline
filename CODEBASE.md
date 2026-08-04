@@ -4,13 +4,15 @@
 
 **Last updated:** 2026-08-03
 **Primary language:** Python 3.12 (backend) / TypeScript (frontend)
-**Architecture style:** Full-stack monolith (two separate runtimes in one repo)
+**Architecture style:** Full-stack monolith (two separate runtimes in one repo, Dockerized)
 
 ---
 
 ## Architecture overview
 
-The system has two runtimes connected by a Vite dev-server proxy. The React frontend collects job details and calls five FastAPI endpoints. The backend loads profile and project data once at startup, builds a prompt, makes a single non-streaming LLM call, parses the LLM's structured plaintext response, assembles a LaTeX document from the parsed data and hardcoded templates, then optionally compiles it to PDF via pdflatex.
+The system has two runtimes connected by a reverse proxy. In development, Vite's dev server proxies `/api` to the backend on `:8000`. In Docker, nginx proxies `/api/` to `backend:8000` (without prefix stripping — the backend mounts its own `/api` prefix).
+
+The React frontend collects job details and calls five FastAPI endpoints. The backend loads profile and project data once at startup, builds a prompt, makes a single non-streaming LLM call, parses the LLM's structured plaintext response, assembles a LaTeX document from the parsed data and hardcoded templates, then optionally compiles it to PDF via pdflatex.
 
 State lives entirely on the filesystem. Each generated application gets a timestamped directory under `backend/data/applications/` containing four artifacts: `llm_response.md`, `request.json`, `resume.tex`, and (on success) `resume.pdf`. There is no database, cache, or message queue.
 
@@ -24,13 +26,27 @@ graph LR
     Frontend -->|GET /api/applications/{id}/*| API
 ```
 
+**Docker topology** (two services, two named volumes):
+
+```
+┌─ docker-compose ────────────────────────────────┐
+│                                                  │
+│  frontend (nginx:alpine)  ──/api/──>  backend    │
+│       :80                           :8000        │
+│                                                  │
+│  Volumes:                                        │
+│    applications_data  →  /app/backend/data/apps  │
+│    miktex_cache       →  /home/appuser/.cache/…  │
+└──────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Tech stack
 
 | Layer | Technology | Notes |
 |---|---|---|
-| Backend runtime | Python 3.12 | Managed via `uv`; `pyproject.toml` at repo root |
+| Backend runtime | Python 3.12 | Managed via `uv`; `pyproject.toml` at repo root; `uv.lock` committed for frozen Docker builds |
 | Web framework | FastAPI | Pydantic v2 models; async handlers; lifespan loads startup data |
 | LLM client | LiteLLM (`acompletion`) | Single non-streaming call; `LLMError` categories: auth/rate_limit/connection/unknown |
 | Settings | pydantic-settings | Reads `backend/.env`; env vars win over defaults |
@@ -38,6 +54,9 @@ graph LR
 | Testing (backend) | pytest + pytest-asyncio | `tests/spec/` (frozen), `tests/integration/` (mutable) |
 | Testing (frontend) | vitest 4 | `frontend/src/api/client.test.ts` |
 | PDF compilation | pdflatex (MiKTeX) | Two-pass compile; 60s per-pass timeout; runs in `asyncio.to_thread` |
+| Container (backend) | Docker — python:3.12-slim-bookworm | MiKTeX official apt repo; non-root `appuser`; healthcheck on `/health` |
+| Container (frontend) | Docker — multi-stage: node:20-alpine → nginx:alpine | SPA root; `/api/` reverse proxy to `backend:8000` |
+| Orchestration | Docker Compose | Two services, two named volumes (`applications_data`, `miktex_cache`); `.env` mounted read-only |
 
 ---
 
@@ -49,6 +68,8 @@ graph LR
 | Frontend dev | `npm run dev` (in `frontend/`) | Vite dev server on :5173; proxies `/api` to :8000 |
 | Backend tests | `pytest -x -q` | Runs from repo root; `asyncio_mode = "auto"` |
 | Frontend tests | `npm test` (in `frontend/`) | vitest; single `client.test.ts` |
+| Start scripts | `./scripts/start-all.sh` | Runs backend (background) + frontend (foreground); traps INT/EXIT to kill backend |
+| Docker (production) | `docker compose up --build` | Builds both images, starts backend (:8000) + frontend (:80) |
 
 `backend/app/main.py` defines `create_app()` (no-arg factory). Lifespan loads five items into `app.state`: `settings`, `profile`, `sweep_text`, `sweep_headings`, `prompt_template`, `project_links`. CORS is hardcoded to `localhost:5173` and `127.0.0.1:5173`.
 
@@ -102,8 +123,23 @@ graph LR
 | `tests/spec/test_llm_client.py` | Frozen | Error categorization |
 | `tests/integration/test_api.py` | Mutable | Full endpoint flow |
 | `tests/integration/test_pdf.py` | Mutable | PDF compilation |
+| `tests/integration/test_security.py` | Mutable | Path-traversal attack vectors (8 tests) |
 | `tests/fixtures/llm_response_sample.txt` | Frozen | Golden LLM response for parser tests |
 | `frontend/src/api/client.test.ts` | Mutable | Frontend API client |
+
+### Scripts and ops
+
+| Path | Responsibility |
+|---|---|
+| `scripts/start-backend.sh` | Starts backend via `uv run uvicorn`; logs to `.logs/backend.log` |
+| `scripts/start-frontend.sh` | Starts frontend dev server (`npm run dev`) |
+| `scripts/start-all.sh` | Runs backend in background, frontend in foreground; traps signals to clean up backend on exit |
+| `Dockerfile` | Backend image: python:3.12-slim-bookworm + MiKTeX apt repo; non-root `appuser`; healthcheck |
+| `frontend/Dockerfile` | Multi-stage: node:20-alpine build → nginx:alpine serve |
+| `frontend/nginx.conf` | SPA root (`try_files $uri /index.html`); `/api/` reverse proxy to `backend:8000` (no prefix strip) |
+| `docker-compose.yml` | Two services; `applications_data` and `miktex_cache` named volumes; `.env` mounted read-only; `docs/` mounted read-only |
+| `.dockerignore` | Excludes `.venv`, `node_modules`, `.env`, `scratch/`, agent task files, OS junk |
+| `frontend/.dockerignore` | Excludes `node_modules`, `dist`, logs, IDE files |
 
 ---
 
@@ -126,6 +162,15 @@ The LLM is prompted to output `# Skills`, `# Experience`, `# Projects` sections 
 
 **Startup data is immutable**
 The lifespan handler loads `profile.yaml`, `PROJECT_SWEEP_SUMMARIES.md`, `llm_prompt.md`, and `project_links.yaml` once into `app.state`. Changing these files requires a server restart. There is no hot-reload for owner data.
+
+**application_id is regex-validated, not path-joined raw**
+`storage.py` defines `APPLICATION_ID_PATTERN = r"^application-\d{8}-\d{6}$"`. `application_dir()` raises `ValueError` if the ID does not match, and `api.py` catches `(FileNotFoundError, ValueError)` to return 404. This prevents path traversal via encoded `..` segments — a `..%2F..%2F` ID is rejected before any filesystem lookup occurs.
+
+**Docker backend runs as non-root appuser**
+The root `Dockerfile` creates `appuser` (uid 1000), switches to it after installing dependencies as root, and pre-creates the MiKTeX cache dir with `appuser` ownership so the named volume inherits correct permissions. The `.env` file is never copied into the image — it is mounted read-only at runtime.
+
+**nginx proxy does not strip the /api prefix**
+`frontend/nginx.conf` proxies `/api/` directly to `http://backend:8000` (no `location /api/ { proxy_pass http://backend:8000; }` with trailing slash). This means the backend sees the full `/api/applications` path, matching the dev-server behavior exactly. Adding a trailing slash to `proxy_pass` would break routing.
 
 ---
 
@@ -153,9 +198,18 @@ pytest -x -q
 
 # 7. Frontend tests
 cd frontend && npm test
+
+# --- Alternative: bash scripts (logs to .logs/) ---
+./scripts/start-all.sh     # backend (background) + frontend (foreground)
+
+# --- Alternative: Docker (production-like) ---
+docker compose up --build  # builds both images, starts on :8000 and :80
+docker compose down        # stop and remove containers
 ```
 
 Environment variables: copy `backend/.env.example` to `backend/.env`. The critical vars are `GEMINI_API_KEY` (required for LLM calls) and `PDFLATEX_PATH` (required for PDF compilation; if unset, the system falls back to MiKTeX default path, then `shutil.which("pdflatex")`).
+
+In Docker, `.env` is mounted read-only. `APPLICATIONS_ROOT` is overridden to `/app/backend/data/applications` to match the named volume mount. `MIKTEX_CACHE_DIR` is set to `/home/appuser/.cache/miktex` to persist the MiKTeX package cache across container restarts.
 
 ---
 
@@ -183,3 +237,7 @@ Dev CORS is hardcoded to Vite's defaults in `main.py`. Production deployment wou
 - `tests/spec/` tests are frozen -- they encode the expected contract. If the parser or assembler behavior changes, the spec tests must be updated to match, not the other way around.
 - The `PDFLATEX_PATH` resolution chain: env value -> MiKTeX default -> `shutil.which("pdflatex")` -> None. Tests can override this by setting the env var before `Settings()` construction.
 - `backend/data/applications/` is gitignored (only `.gitkeep` is tracked). Generated resumes are local-only.
+- `APPLICATION_ID_PATTERN` in `storage.py` must stay in sync with the test data in `test_security.py`. Changing the ID format requires updating both the pattern regex and the security test parametrization.
+- The backend Dockerfile runs `uv sync --frozen` -- this requires `uv.lock` to be committed. Never delete or regenerate `uv.lock` without testing the Docker build.
+- `frontend/nginx.conf` proxies `/api/` without stripping the prefix. Do not add a trailing slash to `proxy_pass` — it would break routing by stripping `/api` from the forwarded path.
+- Docker volumes `applications_data` and `miktex_cache` persist across `docker compose down`. Use `docker compose down -v` to wipe them (e.g., to clear stale MiKTeX packages).
