@@ -13,10 +13,13 @@ Locked API contract (PLAN D9, D10, D13 and §3):
 
     POST /api/applications
         Request body: {job_position, job_description, company_name,
-        company_description?} (all strings; company_description optional).
+        company_description?} (all strings; company_description optional;
+        generate_cover_letter? defaults true).
         Response 200 JSON (snake_case):
             {status: 200, llm_generation: "OK", reconstruction: "OK",
-             saved: "OK", pdf_error: str | None, application_id: str}
+             saved: "OK", pdf_error: str | None, application_id: str,
+             cover_letter: str | None, cover_letter_generated: bool,
+             cover_letter_error: str | None}
         ``application_id`` matches application-YYYYMMDD-HHMMSS and the app
         dir (root / application_id) contains resume.tex, llm_response.md
         and request.json; resume.pdf is present when the PDF phase
@@ -81,6 +84,12 @@ from backend.app.storage import create_application_dir, save_request_json
 FIXTURES_DIR = Path(__file__).resolve().parents[1] / "fixtures"
 GOLDEN_LLM_TEXT = (FIXTURES_DIR / "llm_response_sample.txt").read_text(encoding="utf-8")
 
+COVER_LETTER_TEXT = (
+    "Dear Hiring Manager,\n\n"
+    "I am excited to apply for the Data Scientist Intern position at "
+    "SUHORA Technologies Pvt. Ltd.\n\nSincerely,\nCandidate"
+)
+
 MALFORMED_LLM_TEXT = "# Skills\nmalformed line without colon\n# Experience\n# Projects\n"
 
 APPLICATION_ID_PATTERN = re.compile(r"^application-\d{8}-\d{6}$")
@@ -114,6 +123,21 @@ async def fake_generate_resume_text_failure(prompt: str, settings: Settings) -> 
     )
 
 
+async def fake_generate_cover_letter_text(prompt: str, settings: Settings) -> str:
+    """Return a canned cover letter instead of calling an LLM (no network)."""
+
+    return COVER_LETTER_TEXT
+
+
+async def fake_generate_cover_letter_text_failure(prompt: str, settings: Settings) -> str:
+    """Raise the typed LLM error the API must treat as non-fatal."""
+
+    raise LLMError(
+        "Cover letter generation failed: injected test failure",
+        category="unknown",
+    )
+
+
 async def fake_pdf_success(settings: Settings, app_dir: Path) -> Path:
     """Write a fake resume.pdf and return its path (compile success)."""
 
@@ -126,6 +150,14 @@ async def fake_pdf_failure(settings: Settings, app_dir: Path) -> Path:
     """Raise the typed pdf error the API must treat as non-fatal."""
 
     raise PDFCompileError("pdflatex compile failed (test fixture)")
+
+
+async def fake_cover_letter_pdf_success(app_dir: Path, settings: Settings) -> Path:
+    """Write a fake cover_letter.pdf and return its path (export success)."""
+
+    pdf_path = app_dir / "cover_letter.pdf"
+    pdf_path.write_bytes(b"%PDF-1.7 cover letter test fixture")
+    return pdf_path
 
 
 def raise_assembler_error(*args: Any, **kwargs: Any) -> str:
@@ -154,15 +186,45 @@ def patch_module_call(
 
 
 def patch_llm(monkeypatch: pytest.MonkeyPatch, fake: Any) -> None:
-    """Point the API's LLM call at a deterministic fake."""
+    """Point the API's LLM calls at deterministic fakes.
+
+    Both the resume call and the non-fatal cover-letter call are patched:
+    POST /api/applications defaults to ``generate_cover_letter=true``, so
+    an unmocked second LLM call would touch the network in every test.
+    """
 
     patch_module_call(monkeypatch, "backend.app.llm_client.generate_resume_text", fake)
+    patch_module_call(
+        monkeypatch,
+        "backend.app.llm_client.generate_cover_letter_text",
+        fake_generate_cover_letter_text,
+    )
+
+
+def patch_cover_letter_llm(monkeypatch: pytest.MonkeyPatch, fake: Any) -> None:
+    """Point only the cover-letter LLM call at a deterministic fake."""
+
+    patch_module_call(
+        monkeypatch,
+        "backend.app.llm_client.generate_cover_letter_text",
+        fake,
+    )
 
 
 def patch_pdf_compile(monkeypatch: pytest.MonkeyPatch, fake: Any) -> None:
     """Point the API's PDF phase at a deterministic fake."""
 
     patch_module_call(monkeypatch, "backend.app.pdf.compile_resume", fake)
+
+
+def patch_cover_letter_pdf_export(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Point the lazy pandoc export at a deterministic fake."""
+
+    patch_module_call(
+        monkeypatch,
+        "backend.app.cover_letter_pdf.export_cover_letter_pdf",
+        fake_cover_letter_pdf_success,
+    )
 
 
 def patch_assembler(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -246,6 +308,9 @@ class TestCreateApplication:
             "saved",
             "pdf_error",
             "application_id",
+            "cover_letter",
+            "cover_letter_generated",
+            "cover_letter_error",
         }
         assert body["status"] == 200
         assert body["llm_generation"] == "OK"
@@ -462,5 +527,252 @@ class TestGetEndpoints:
         missing_id = "application-20260802-000000"
 
         response = client.get(f"/api/applications/{missing_id}{path_suffix}")
+
+        assert response.status_code == 404
+
+
+class TestCoverLetter:
+    """Cover-letter contract: checkbox POST, late generation, text/pdf (D15-D21)."""
+
+    def _create_application_with_letter_option(
+        self,
+        client: TestClient,
+        applications_root: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        generate_cover_letter: bool,
+    ) -> str:
+        """POST an application with the cover-letter checkbox at a given value."""
+
+        patch_llm(monkeypatch, fake_generate_resume_text)
+        patch_pdf_compile(monkeypatch, fake_pdf_success)
+        payload = {**REQUEST_PAYLOAD, "generate_cover_letter": generate_cover_letter}
+        response = client.post("/api/applications", json=payload)
+        assert response.status_code == 200
+        application_id = response.json()["application_id"]
+        assert (applications_root / application_id).is_dir()
+        return application_id
+
+    def test_post_with_cover_letter_true_generates_letter_and_flips_flag(
+        self,
+        client: TestClient,
+        applications_root: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Checkbox-on POST returns OK fields, saves cover_letter.md, flags true."""
+
+        patch_llm(monkeypatch, fake_generate_resume_text)
+        patch_pdf_compile(monkeypatch, fake_pdf_success)
+
+        response = post_application(client)
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["cover_letter"] == "OK"
+        assert body["cover_letter_generated"] is True
+        assert body["cover_letter_error"] is None
+
+        app_dir = applications_root / body["application_id"]
+        assert (app_dir / "cover_letter.md").read_text(encoding="utf-8") == COVER_LETTER_TEXT
+        saved_metadata = json.loads((app_dir / "request.json").read_text(encoding="utf-8"))
+        assert saved_metadata["cover_letter"] == "OK"
+        assert saved_metadata["cover_letter_generated"] is True
+        assert saved_metadata["cover_letter_error"] is None
+
+    def test_post_with_cover_letter_false_skips_letter(
+        self,
+        client: TestClient,
+        applications_root: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Checkbox-off POST returns null letter fields and saves no letter."""
+
+        patch_llm(monkeypatch, fake_generate_resume_text)
+        patch_pdf_compile(monkeypatch, fake_pdf_success)
+
+        response = client.post(
+            "/api/applications",
+            json={**REQUEST_PAYLOAD, "generate_cover_letter": False},
+        )
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["cover_letter"] is None
+        assert body["cover_letter_generated"] is False
+        assert body["cover_letter_error"] is None
+
+        app_dir = applications_root / body["application_id"]
+        assert not (app_dir / "cover_letter.md").exists()
+        saved_metadata = json.loads((app_dir / "request.json").read_text(encoding="utf-8"))
+        assert saved_metadata["cover_letter_generated"] is False
+
+    def test_post_letter_failure_is_non_fatal_and_sets_error(
+        self,
+        client: TestClient,
+        applications_root: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A failed letter call never fails the POST; ERROR fields are set."""
+
+        patch_llm(monkeypatch, fake_generate_resume_text)
+        patch_pdf_compile(monkeypatch, fake_pdf_success)
+        patch_cover_letter_llm(monkeypatch, fake_generate_cover_letter_text_failure)
+
+        response = post_application(client)
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["cover_letter"] == "ERROR"
+        assert body["cover_letter_generated"] is False
+        assert isinstance(body["cover_letter_error"], str)
+        assert body["cover_letter_error"]
+
+        app_dir = applications_root / body["application_id"]
+        assert not (app_dir / "cover_letter.md").exists()
+        saved_metadata = json.loads((app_dir / "request.json").read_text(encoding="utf-8"))
+        assert saved_metadata["cover_letter"] == "ERROR"
+        assert saved_metadata["cover_letter_generated"] is False
+        assert isinstance(saved_metadata["cover_letter_error"], str)
+
+    def test_late_generation_generates_from_stored_context(
+        self,
+        client: TestClient,
+        applications_root: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Late endpoint rebuilds from stored request.json + llm_response.md."""
+
+        application_id = self._create_application_with_letter_option(
+            client, applications_root, monkeypatch, False
+        )
+        patch_cover_letter_llm(monkeypatch, fake_generate_cover_letter_text)
+
+        response = client.post(f"/api/applications/{application_id}/cover_letter")
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["cover_letter"] == "OK"
+        assert body["cover_letter_generated"] is True
+        assert body["cover_letter_text"] == COVER_LETTER_TEXT
+
+        app_dir = applications_root / application_id
+        assert (app_dir / "cover_letter.md").read_text(encoding="utf-8") == COVER_LETTER_TEXT
+        saved_metadata = json.loads((app_dir / "request.json").read_text(encoding="utf-8"))
+        assert saved_metadata["cover_letter_generated"] is True
+
+    def test_late_generation_repeat_returns_409(
+        self,
+        client: TestClient,
+        applications_root: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Generating a letter twice is rejected with 409 (D17)."""
+
+        application_id = self._create_application_with_letter_option(
+            client, applications_root, monkeypatch, False
+        )
+        patch_cover_letter_llm(monkeypatch, fake_generate_cover_letter_text)
+        first = client.post(f"/api/applications/{application_id}/cover_letter")
+        assert first.status_code == 200
+
+        second = client.post(f"/api/applications/{application_id}/cover_letter")
+
+        assert second.status_code == 409
+
+    def test_get_cover_letter_returns_saved_text(
+        self,
+        client: TestClient,
+        applications_root: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """The saved cover_letter.md is served verbatim."""
+
+        application_id = self._create_application_with_letter_option(
+            client, applications_root, monkeypatch, True
+        )
+
+        response = client.get(f"/api/applications/{application_id}/cover_letter")
+
+        assert response.status_code == 200
+        assert response.text == COVER_LETTER_TEXT
+
+    def test_get_cover_letter_returns_404_when_missing(
+        self,
+        client: TestClient,
+        applications_root: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A checkbox-off app with no letter 404s on the text endpoint."""
+
+        application_id = self._create_application_with_letter_option(
+            client, applications_root, monkeypatch, False
+        )
+
+        response = client.get(f"/api/applications/{application_id}/cover_letter")
+
+        assert response.status_code == 404
+
+    def test_get_cover_letter_pdf_returns_attachment(
+        self,
+        client: TestClient,
+        applications_root: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Lazy export downloads cover_letter.pdf as an attachment (D19/D21)."""
+
+        application_id = self._create_application_with_letter_option(
+            client, applications_root, monkeypatch, True
+        )
+        patch_cover_letter_pdf_export(monkeypatch)
+
+        response = client.get(f"/api/applications/{application_id}/cover_letter/pdf")
+
+        assert response.status_code == 200
+        content_disposition = response.headers["content-disposition"]
+        assert content_disposition.lower().startswith("attachment")
+        assert f"cover_letter-{application_id}.pdf" in content_disposition
+        expected_pdf = (applications_root / application_id / "cover_letter.pdf").read_bytes()
+        assert response.content == expected_pdf
+
+    def test_get_cover_letter_pdf_returns_404_when_no_letter(
+        self,
+        client: TestClient,
+        applications_root: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Exporting a letter that was never generated is a 404."""
+
+        application_id = self._create_application_with_letter_option(
+            client, applications_root, monkeypatch, False
+        )
+
+        response = client.get(f"/api/applications/{application_id}/cover_letter/pdf")
+
+        assert response.status_code == 404
+
+    @pytest.mark.parametrize(
+        "invalid_id",
+        [
+            "application-invalid",
+            "application-20260802-000000%2F..%2F..%2Fetc%2Fpasswd",
+        ],
+    )
+    @pytest.mark.parametrize(
+        "method,path_suffix",
+        [
+            ("get", "/cover_letter"),
+            ("get", "/cover_letter/pdf"),
+            ("post", "/cover_letter"),
+        ],
+    )
+    def test_cover_letter_endpoints_404_on_invalid_application_id(
+        self,
+        client: TestClient,
+        method: str,
+        path_suffix: str,
+        invalid_id: str,
+    ) -> None:
+        """Invalid application ids 404 on every cover-letter endpoint."""
+
+        response = client.request(method, f"/api/applications/{invalid_id}{path_suffix}")
 
         assert response.status_code == 404
