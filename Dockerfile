@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl -fsSL https://miktex.org/download/key | gpg --dearmor -o /usr/share/keyrings/miktex.gpg && \
     echo "deb [signed-by=/usr/share/keyrings/miktex.gpg] https://miktex.org/download/debian bookworm universe" > /etc/apt/sources.list.d/miktex.list && \
     apt-get update && \
-    apt-get install -y --no-install-recommends miktex && \
+    apt-get install -y --no-install-recommends miktex pandoc && \
     # Finish MiKTeX setup (private installation)
     miktexsetup finish && \
     # Enable auto-install for MiKTeX packages

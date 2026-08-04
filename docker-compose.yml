@@ -23,6 +23,12 @@ services:
       - APPLICATIONS_ROOT=/app/backend/data/applications
       # Mount MiKTeX package cache for appuser
       - MIKTEX_CACHE_DIR=/home/appuser/.cache/miktex
+      # Optional host PANDOC_PATH passthrough
+      - PANDOC_PATH=${PANDOC_PATH:-}
+      # Empty override beats env_file's Windows host path; resolver falls back to PATH lookup
+      - PDFLATEX_PATH=
+      # First-run MiKTeX package auto-install can exceed 60s; give it headroom
+      - PDF_COMPILE_TIMEOUT_SECONDS=300
     restart: unless-stopped
 
   frontend:
